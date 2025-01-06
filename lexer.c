@@ -1,61 +1,39 @@
+#include "./lexer.h"
+
 #include <assert.h>
-#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-
-typedef enum {
-    TK_SYM = 0,
-    TK_EQUAL,
-    TK_LBRACE,
-    TK_RBRACE,
-    TK_LSQUARE,
-    TK_RSQUARE,
-    TK_NEWLINE,
-    TK_COMMENT,
-    TK_STRING,
-    TK_NUMBER,
-    TK_STAR,
-    TK_PLUS,
-
-    TK_PATH_ROOT,
-    TK_PATH_CHUNK
-} Token_Kind;
-
-typedef struct Token Token;
-
-struct Token {
-    char *content;
-    size_t content_size;
-
-    Token_Kind kind;
-
-    unsigned int line, col;
-
-    const char *filename;
-
-    Token *next;
-};
-
-typedef struct {
-    unsigned long content_size;
-
-    unsigned int cursor, bot, line, col, bline, bcol;
-
-    char *content;
-    const char *filename;
-} Lexer;
-
-char chr(Lexer *lexer);
-void lexer_free(Lexer *lexer);
-void print_tokens();
+#include <errno.h>
 
 static Token *tokens_head = NULL;
 static Token *tokens_tail = NULL;
 
-static const char *token_kind_name(Token_Kind kind) {
+void print_tokens() {
+    Token *curr = tokens_head;
+
+    while (curr != NULL) {
+        switch (curr->kind) {
+            case TK_NEWLINE:
+                printf("NOTE %s:%d:%d: \\n (%s)\n", curr->loc.filename, curr->loc.line, curr->loc.col, token_kind_name(curr->kind));
+                break;
+            case TK_EOF:
+                printf("NOTE %s:%d:%d: <eof> (%s)\n", curr->loc.filename, curr->loc.line, curr->loc.col, token_kind_name(curr->kind));
+                break;
+            default:
+                printf("NOTE %s:%d:%d: %.*s (%s)\n", curr->loc.filename, curr->loc.line, curr->loc.col, (int)curr->content_size, curr->content, token_kind_name(curr->kind));
+                break;
+        }
+
+        curr = curr->next;
+    }
+}
+
+const char *token_kind_name(Token_Kind kind) {
     switch (kind) {
+        case TK_EOF:
+            return "EOF";
         case TK_SYM:
             return "SYM";
         case TK_EQUAL:
@@ -89,6 +67,46 @@ static const char *token_kind_name(Token_Kind kind) {
     }
 }
 
+// Get the current char without moving the cursor
+static char chr(Lexer *lexer) {
+    if (lexer->cursor < lexer->content_size) {
+        return lexer->content[lexer->cursor];
+    }
+
+    return '\0';
+}
+
+// Advances the cursor to the next char
+static char nchr(Lexer *lexer) {
+    if (lexer->cursor < lexer->content_size) {
+        char c = chr(lexer);
+
+        ++lexer->cursor;
+
+        if (c == '\n') {
+            lexer->loc.col = 1;
+            ++lexer->loc.line;
+        } else {
+            ++lexer->loc.col;
+        }
+
+        return chr(lexer);
+    } else if (lexer->cursor < lexer->content_size) {
+        ++lexer->cursor;
+    }
+
+    return '\0';
+}
+
+// Lookahead of 1 char
+static char pchr(Lexer *lexer) {
+    if (lexer->cursor + 1 < lexer->content_size) {
+        return lexer->content[lexer->cursor + 1];
+    }
+
+    return '\0';
+}
+
 static void error() {
     #if DEBUG
     print_tokens();
@@ -98,7 +116,7 @@ static void error() {
 static void unrecognized_char_error(Lexer *lexer) {
     error();
 
-    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unrecognized character '%c'\n", lexer->filename, lexer->line, lexer->col, chr(lexer));
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unrecognized character '%c'\n", lexer->loc.filename, lexer->loc.line, lexer->loc.col, chr(lexer));
     lexer_free(lexer);
     exit(1);
 }
@@ -106,7 +124,7 @@ static void unrecognized_char_error(Lexer *lexer) {
 static void invalid_number_error(Lexer *lexer) {
     error();
 
-    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid number '%.*s'\n", lexer->filename, lexer->line, lexer->col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid number '%.*s'\n", lexer->loc.filename, lexer->loc.line, lexer->loc.col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
     lexer_free(lexer);
     exit(1);
 }
@@ -114,7 +132,7 @@ static void invalid_number_error(Lexer *lexer) {
 static void invalid_path_chunk_error(Lexer *lexer) {
     error();
 
-    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid path chunk '%.*s'\n", lexer->filename, lexer->line, lexer->col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid path chunk '%.*s'\n", lexer->loc.filename, lexer->loc.line, lexer->loc.col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
     lexer_free(lexer);
     exit(1);
 }
@@ -122,7 +140,7 @@ static void invalid_path_chunk_error(Lexer *lexer) {
 static void unterminated_string_error(Lexer *lexer) {
     error();
 
-    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unterminated string\n", lexer->filename, lexer->bline, lexer->bcol);
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unterminated string\n", lexer->loc.filename, lexer->bline, lexer->bcol);
     lexer_free(lexer);
     exit(1);
 }
@@ -140,9 +158,11 @@ Lexer create_lexer(const char *filename) {
     rewind(fptr);
     
     Lexer lexer = (Lexer){
-        .filename = filename,
-        .col = 1,
-        .line = 1,
+        .loc = (Location){
+            .filename = filename,
+            .col = 1,
+            .line = 1,
+        },
         .bline = 1,
         .bcol = 1,
         .cursor = 0,
@@ -167,56 +187,16 @@ Lexer create_lexer(const char *filename) {
     return lexer;
 }
 
-// Get the current char without moving the cursor
-char chr(Lexer *lexer) {
-    if (lexer->cursor < lexer->content_size) {
-        return lexer->content[lexer->cursor];
-    }
-
-    return '\0';
-}
-
-// Advances the cursor to the next char
-char nchr(Lexer *lexer) {
-    if (lexer->cursor + 1 < lexer->content_size) {
-        char c = chr(lexer);
-
-        ++lexer->cursor;
-
-        if (c == '\n') {
-            lexer->col = 1;
-            ++lexer->line;
-        } else {
-            ++lexer->col;
-        }
-
-        return chr(lexer);
-    } else if (lexer->cursor < lexer->content_size) {
-        ++lexer->cursor;
-    }
-
-    return '\0';
-}
-
-// Lookahead of 1 char
-char pchr(Lexer *lexer) {
-    if (lexer->cursor + 1 < lexer->content_size) {
-        return lexer->content[lexer->cursor + 1];
-    }
-
-    return '\0';
-}
-
-void save_token(Lexer *lexer, Token_Kind kind) {
+static void save_token(Lexer *lexer, Token_Kind kind) {
     Token *token = calloc(1, sizeof(Token));
    
-    token->col = lexer->bcol;
-    token->line = lexer->bline;
+    token->loc.col = lexer->bcol;
+    token->loc.line = lexer->bline;
     token->content = lexer->content + lexer->bot;
     token->content_size = lexer->cursor - lexer->bot;
     token->kind = kind;
     token->next = NULL;
-    token->filename = lexer->filename;
+    token->loc.filename = lexer->loc.filename;
 
     if (tokens_head == NULL) {
         tokens_head = token;
@@ -227,30 +207,34 @@ void save_token(Lexer *lexer, Token_Kind kind) {
     }
 }
 
-bool is_name(char c) {
+static bool is_eof(char c) {
+    return c == '\0';
+}
+
+static bool is_name(char c) {
     return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-bool is_digit(char c) {
+static bool is_digit(char c) {
     return c >= '0' && c <= '9';
 }
 
-bool is_whitespace(char c) {
+static bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\r';
 }
 
-void trim_whitespaces(Lexer *lexer) {
+static void trim_whitespaces(Lexer *lexer) {
     while (is_whitespace(chr(lexer))) nchr(lexer);
 }
 
-void lex_name(Lexer *lexer) {
+static void lex_name(Lexer *lexer) {
     while (is_name(chr(lexer))) nchr(lexer);
 
     save_token(lexer, TK_SYM);
 }
 
 // Path chunk format: ^\/(([a-z]*)([A-Z]*)(_*))*
-void lex_path_chunk(Lexer *lexer) {
+static void lex_path_chunk(Lexer *lexer) {
     if (chr(lexer) != '/') invalid_path_chunk_error(lexer);
 
     nchr(lexer);
@@ -267,14 +251,14 @@ void lex_path_chunk(Lexer *lexer) {
     save_token(lexer, TK_PATH_CHUNK);
 }
 
-void lex_comment(Lexer *lexer) {
+static void lex_comment(Lexer *lexer) {
     while (chr(lexer) != '\n') nchr(lexer);
 
     save_token(lexer, TK_COMMENT);
 }
 
 // TODO: basic string escape (\r \n \t \b \f .....)
-void lex_string(Lexer *lexer) {
+static void lex_string(Lexer *lexer) {
     nchr(lexer);
 
     while (chr(lexer) != '"') {
@@ -291,7 +275,7 @@ void lex_string(Lexer *lexer) {
     save_token(lexer, TK_STRING);
 }
 
-void lex_number(Lexer *lexer) {
+static void lex_number(Lexer *lexer) {
     bool is_negative = false;
     int digits_count = 0;
 
@@ -327,18 +311,25 @@ void lex_number(Lexer *lexer) {
     save_token(lexer, TK_NUMBER);
 }
 
-void lex_char(Lexer *lexer, Token_Kind kind) {
+static void lex_char(Lexer *lexer, Token_Kind kind) {
     nchr(lexer);
     save_token(lexer, kind);
 }
 
-void lex(Lexer *lexer) {
-    while (lexer->cursor < lexer->content_size) {
+static void lex_eof(Lexer *lexer) {
+    save_token(lexer, TK_EOF);
+    nchr(lexer);
+}
+
+Token *lex(Lexer *lexer) {
+    bool lexing = true;
+
+    while (lexing) {
         trim_whitespaces(lexer);
 
         lexer->bot = lexer->cursor;
-        lexer->bline = lexer->line;
-        lexer->bcol = lexer->col;
+        lexer->bline = lexer->loc.line;
+        lexer->bcol = lexer->loc.col;
 
         switch (chr(lexer)) {
             case 'a'...'z':
@@ -357,25 +348,15 @@ void lex(Lexer *lexer) {
             case '#': lex_comment(lexer); break;
             case '"': lex_string(lexer); break;
             case '\n': lex_char(lexer, TK_NEWLINE); break;
+            case '\0': {
+                lex_eof(lexer);
+                lexing = false;
+            } break;
             default: unrecognized_char_error(lexer); break;
         }
     }
-}
 
-void print_tokens() {
-    Token *curr = tokens_head;
-
-    while (curr != NULL) {
-        if (curr->kind == TK_NEWLINE){
-            printf("NOTE %s:%d:%d: \\n (%s)\n", curr->filename, curr->line, curr->col, token_kind_name(curr->kind));
-        } else {
-            printf("NOTE %s:%d:%d: %.*s (%s)\n", curr->filename, curr->line, curr->col, (int)curr->content_size, curr->content, token_kind_name(curr->kind));
-        }
-
-        curr = curr->next;
-    }
-
-    printf("\n");
+    return tokens_head;
 }
 
 void lexer_free(Lexer *lexer) {
