@@ -6,7 +6,12 @@
 #include <stdbool.h>
 
 typedef enum {
-    TK_SYM = 0
+    TK_SYM = 0,
+    TK_EQUAL,
+    TK_LBRACE,
+    TK_NEWLINE,
+    TK_COMMENT,
+    TK_STRING
 } Token_Kind;
 
 typedef struct Token Token;
@@ -27,7 +32,7 @@ struct Token {
 typedef struct {
     unsigned long content_size;
 
-    unsigned int cursor, bot, line, col;
+    unsigned int cursor, bot, line, col, bline, bcol;
 
     char *content;
     const char *filename;
@@ -35,6 +40,7 @@ typedef struct {
 
 char chr(Lexer *lexer);
 void lexer_free(Lexer *lexer);
+void print_tokens();
 
 static Token *tokens_head = NULL;
 static Token *tokens_tail = NULL;
@@ -43,13 +49,31 @@ static const char *token_kind_name(Token_Kind kind) {
     switch (kind) {
         case TK_SYM:
             return "SYM";
+        case TK_EQUAL:
+            return "EQUAL";
+        case TK_LBRACE:
+            return "LBRACE";
+        case TK_NEWLINE:
+            return "NEWLINE";
+        case TK_COMMENT:
+            return "COMMENT";
+        case TK_STRING:
+            return "STRING";
         default:
             assert(0 && "invalid token kind");
     }
 }
 
-static void unrecognized_char(Lexer *lexer) {
+static void unrecognized_char_error(Lexer *lexer) {
+    print_tokens();
+
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unrecognized character '%c'\n", lexer->filename, lexer->line, lexer->col, chr(lexer));
+    lexer_free(lexer);
+    exit(1);
+}
+
+static void unterminated_string_error(Lexer *lexer) {
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unterminated string\n", lexer->filename, lexer->bline, lexer->bcol);
     lexer_free(lexer);
     exit(1);
 }
@@ -70,6 +94,8 @@ Lexer create_lexer(const char *filename) {
         .filename = filename,
         .col = 1,
         .line = 1,
+        .bline = 1,
+        .bcol = 1,
         .cursor = 0,
         .bot = 0,
         .content_size = stream_size
@@ -104,9 +130,9 @@ char chr(Lexer *lexer) {
 // Advances the cursor to the next char
 char nchr(Lexer *lexer) {
     if (lexer->cursor + 1 < lexer->content_size) {
-        ++lexer->cursor;
-
         char c = chr(lexer);
+
+        ++lexer->cursor;
 
         if (c == '\n') {
             lexer->col = 1;
@@ -133,8 +159,8 @@ char pchr(Lexer *lexer) {
 void save_token(Lexer *lexer, Token_Kind kind) {
     Token *token = calloc(1, sizeof(Token));
    
-    token->col = lexer->col - (lexer->cursor - lexer->bot);
-    token->line = lexer->line;
+    token->col = lexer->bcol;
+    token->line = lexer->bline;
     token->content = lexer->content + lexer->bot;
     token->content_size = lexer->cursor - lexer->bot;
     token->kind = kind;
@@ -168,16 +194,52 @@ void lex_name(Lexer *lexer) {
     save_token(lexer, TK_SYM);
 }
 
+void lex_comment(Lexer *lexer) {
+    while (chr(lexer) != '\n') nchr(lexer);
+
+    save_token(lexer, TK_COMMENT);
+}
+
+// TODO: basic string escape (\r \n \t \b \f .....)
+void lex_string(Lexer *lexer) {
+    nchr(lexer);
+
+    while (chr(lexer) != '"') {
+        if (chr(lexer) == '\n') {
+            unterminated_string_error(lexer);
+            break;
+        }
+
+        nchr(lexer);
+    }
+
+    nchr(lexer);
+
+    save_token(lexer, TK_STRING);
+}
+
+void lex_char(Lexer *lexer, Token_Kind kind) {
+    nchr(lexer);
+    save_token(lexer, kind);
+}
+
 void lex(Lexer *lexer) {
     while (lexer->cursor < lexer->content_size) {
         trim_whitespaces(lexer);
 
         lexer->bot = lexer->cursor;
+        lexer->bline = lexer->line;
+        lexer->bcol = lexer->col;
 
         switch (chr(lexer)) {
             case 'a'...'z':
             case 'A'...'Z': lex_name(lexer); break; 
-            default: unrecognized_char(lexer); break;
+            case '=': lex_char(lexer, TK_EQUAL); break;
+            case '{': lex_char(lexer, TK_LBRACE); break;
+            case '#': lex_comment(lexer); break;
+            case '"': lex_string(lexer); break;
+            case '\n': lex_char(lexer, TK_NEWLINE); break;
+            default: unrecognized_char_error(lexer); break;
         }
     }
 }
@@ -186,10 +248,16 @@ void print_tokens() {
     Token *curr = tokens_head;
 
     while (curr != NULL) {
-        printf("NOTE %s:%d:%d: %.*s (%s)\n", curr->filename, curr->line, curr->col, (int)curr->content_size, curr->content, token_kind_name(curr->kind));
+        if (curr->kind == TK_NEWLINE){
+            printf("NOTE %s:%d:%d: \\n (%s)\n", curr->filename, curr->line, curr->col, token_kind_name(curr->kind));
+        } else {
+            printf("NOTE %s:%d:%d: %.*s (%s)\n", curr->filename, curr->line, curr->col, (int)curr->content_size, curr->content, token_kind_name(curr->kind));
+        }
 
         curr = curr->next;
     }
+
+    printf("\n");
 }
 
 void lexer_free(Lexer *lexer) {
