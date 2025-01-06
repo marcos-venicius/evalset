@@ -211,7 +211,7 @@ static bool is_eof(char c) {
     return c == '\0';
 }
 
-static bool is_name(char c) {
+static bool is_symbol(char c) {
     return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
@@ -227,8 +227,8 @@ static void trim_whitespaces(Lexer *lexer) {
     while (is_whitespace(chr(lexer))) nchr(lexer);
 }
 
-static void lex_name(Lexer *lexer) {
-    while (is_name(chr(lexer))) nchr(lexer);
+static void lex_symbol(Lexer *lexer) {
+    while (is_symbol(chr(lexer))) nchr(lexer);
 
     save_token(lexer, TK_SYM);
 }
@@ -241,7 +241,7 @@ static void lex_path_chunk(Lexer *lexer) {
 
     int path_size = 0;
 
-    while (is_name(chr(lexer))) {
+    while (is_symbol(chr(lexer))) {
         ++path_size;
         nchr(lexer);
     }
@@ -333,7 +333,7 @@ Token *lex(Lexer *lexer) {
 
         switch (chr(lexer)) {
             case 'a'...'z':
-            case 'A'...'Z': lex_name(lexer); break; 
+            case 'A'...'Z': lex_symbol(lexer); break; 
             case '0'...'9':
             case '-': lex_number(lexer); break;
             case '=': lex_char(lexer, TK_EQUAL); break;
