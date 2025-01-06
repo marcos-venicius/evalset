@@ -7,14 +7,20 @@
 #include <string.h>
 #include <errno.h>
 
+// This do-while(0) is a hack to avoid some issues. https://www.geeksforgeeks.org/multiline-macros-in-c/
+// As the article says, we can wrap with parenthesis, but we're using -pedantic and
+// "ISO C forbids braced-groups within expressions".
 #define throw_error(call, lexer) \
     do { \
         error(); \
         call(lexer); \
         lexer_free(lexer); \
         exit(1); \
-    } while(0);
+    } while(0); \
 
+// I don't think we need to put this inside the lexer
+// I'm not sure if would make sense, so, I prefer to create this in a static segment and "private"
+// So, we can just return the pointer to it and that's it.
 static Token *tokens_head = NULL;
 static Token *tokens_tail = NULL;
 
@@ -40,6 +46,9 @@ void print_tokens() {
     }
 }
 
+// Later, We plan to have some intelligent error reporting at parsing and evaluating level
+// So, if we want to say that is missing a RBRACE to close the context, we just use the token kind
+// So, if we change the "rendering style" we don't have to modify in many places but only here.
 const char *token_kind_value(Token_Kind kind) {
     switch (kind) {
         case TK_EOF:
@@ -144,6 +153,9 @@ static void unterminated_string_error(Lexer *lexer) {
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unterminated string\n", lexer->loc.filename, lexer->bline, lexer->bcol);
 }
 
+// For now, reading the file here is OK.
+// But, in the future we'll need to abstract this to the own function, so we can deal with
+// multiple imports
 Lexer create_lexer(const char *filename) {
     FILE *fptr = fopen(filename, "r");
 
@@ -195,7 +207,7 @@ static char chr(Lexer *lexer) {
     return '\0';
 }
 
-// Advances the cursor to the next char
+// Advance the cursor to the next char
 static char nchr(Lexer *lexer) {
     if (lexer->cursor < lexer->content_size) {
         char c = chr(lexer);
@@ -220,13 +232,15 @@ static char nchr(Lexer *lexer) {
 static void save_token(Lexer *lexer, Token_Kind kind) {
     Token *token = calloc(1, sizeof(Token));
    
+    token->loc.filename = lexer->loc.filename;
     token->loc.col = lexer->bcol;
     token->loc.line = lexer->bline;
+
     token->content = lexer->content + lexer->bot;
     token->content_size = lexer->cursor - lexer->bot;
+
     token->kind = kind;
     token->next = NULL;
-    token->loc.filename = lexer->loc.filename;
 
     if (tokens_head == NULL) {
         tokens_head = token;
@@ -253,9 +267,7 @@ static bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\r';
 }
 
-static void trim_whitespaces(Lexer *lexer) {
-    while (is_whitespace(chr(lexer))) nchr(lexer);
-}
+// lexing
 
 static void lex_symbol(Lexer *lexer) {
     while (is_symbol(chr(lexer))) nchr(lexer);
@@ -356,7 +368,8 @@ Token *lex(Lexer *lexer) {
     bool lexing = true;
 
     while (lexing) {
-        trim_whitespaces(lexer);
+        // trim whitespaces
+        while (is_whitespace(chr(lexer))) nchr(lexer);
 
         lexer->bot = lexer->cursor;
         lexer->bline = lexer->loc.line;
