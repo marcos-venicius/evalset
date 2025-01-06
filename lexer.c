@@ -1,7 +1,28 @@
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
+typedef enum {
+    TK_SYM = 0
+} Token_Kind;
+
+typedef struct Token Token;
+
+struct Token {
+    char *content;
+    size_t content_size;
+
+    Token_Kind kind;
+
+    unsigned int line, col;
+
+    const char *filename;
+
+    Token *next;
+};
 
 typedef struct {
     unsigned long content_size;
@@ -11,6 +32,27 @@ typedef struct {
     char *content;
     const char *filename;
 } Lexer;
+
+char chr(Lexer *lexer);
+void lexer_free(Lexer *lexer);
+
+static Token *tokens_head = NULL;
+static Token *tokens_tail = NULL;
+
+static const char *token_kind_name(Token_Kind kind) {
+    switch (kind) {
+        case TK_SYM:
+            return "SYM";
+        default:
+            assert(0 && "invalid token kind");
+    }
+}
+
+static void unrecognized_char(Lexer *lexer) {
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unrecognized character '%c'\n", lexer->filename, lexer->line, lexer->col, chr(lexer));
+    lexer_free(lexer);
+    exit(1);
+}
 
 Lexer create_lexer(const char *filename) {
     FILE *fptr = fopen(filename, "r");
@@ -64,6 +106,15 @@ char nchr(Lexer *lexer) {
     if (lexer->cursor + 1 < lexer->content_size) {
         ++lexer->cursor;
 
+        char c = chr(lexer);
+
+        if (c == '\n') {
+            lexer->col = 1;
+            ++lexer->line;
+        } else {
+            ++lexer->col;
+        }
+
         return chr(lexer);
     }
 
@@ -79,15 +130,88 @@ char pchr(Lexer *lexer) {
     return '\0';
 }
 
+void save_token(Lexer *lexer, Token_Kind kind) {
+    Token *token = calloc(1, sizeof(Token));
+   
+    token->col = lexer->col - (lexer->cursor - lexer->bot);
+    token->line = lexer->line;
+    token->content = lexer->content + lexer->bot;
+    token->content_size = lexer->cursor - lexer->bot;
+    token->kind = kind;
+    token->next = NULL;
+    token->filename = lexer->filename;
+
+    if (tokens_head == NULL) {
+        tokens_head = token;
+        tokens_tail = token;
+    } else {
+        tokens_tail->next = token;
+        tokens_tail = tokens_tail->next;
+    }
+}
+
+bool is_name(char c) {
+    return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+bool is_whitespace(char c) {
+    return c == ' ' || c == '\t' || c == '\r';
+}
+
+void trim_whitespaces(Lexer *lexer) {
+    while (is_whitespace(chr(lexer))) nchr(lexer);
+}
+
+void lex_name(Lexer *lexer) {
+    while (is_name(chr(lexer))) nchr(lexer);
+
+    save_token(lexer, TK_SYM);
+}
+
+void lex(Lexer *lexer) {
+    while (lexer->cursor < lexer->content_size) {
+        trim_whitespaces(lexer);
+
+        lexer->bot = lexer->cursor;
+
+        switch (chr(lexer)) {
+            case 'a'...'z':
+            case 'A'...'Z': lex_name(lexer); break; 
+            default: unrecognized_char(lexer); break;
+        }
+    }
+}
+
+void print_tokens() {
+    Token *curr = tokens_head;
+
+    while (curr != NULL) {
+        printf("NOTE %s:%d:%d: %.*s (%s)\n", curr->filename, curr->line, curr->col, (int)curr->content_size, curr->content, token_kind_name(curr->kind));
+
+        curr = curr->next;
+    }
+}
+
 void lexer_free(Lexer *lexer) {
     free(lexer->content);
+
+    Token *curr = tokens_head;
+
+    while (curr != NULL) {
+        Token *next = curr->next;
+
+        free(curr);
+
+        curr = next;
+    }
 }
 
 int main() {
     Lexer lexer = create_lexer("./examples/settings.es");
 
-    printf("Lexing:\n%s\n", lexer.content);
+    lex(&lexer);
 
+    print_tokens();
     lexer_free(&lexer);
 
     return 0;
