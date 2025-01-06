@@ -11,7 +11,8 @@ typedef enum {
     TK_LBRACE,
     TK_NEWLINE,
     TK_COMMENT,
-    TK_STRING
+    TK_STRING,
+    TK_NUMBER
 } Token_Kind;
 
 typedef struct Token Token;
@@ -59,6 +60,8 @@ static const char *token_kind_name(Token_Kind kind) {
             return "COMMENT";
         case TK_STRING:
             return "STRING";
+        case TK_NUMBER:
+            return "NUMBER";
         default:
             assert(0 && "invalid token kind");
     }
@@ -68,6 +71,14 @@ static void unrecognized_char_error(Lexer *lexer) {
     print_tokens();
 
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unrecognized character '%c'\n", lexer->filename, lexer->line, lexer->col, chr(lexer));
+    lexer_free(lexer);
+    exit(1);
+}
+
+static void invalid_number_error(Lexer *lexer) {
+    print_tokens();
+
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid number '%.*s'\n", lexer->filename, lexer->line, lexer->col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
     lexer_free(lexer);
     exit(1);
 }
@@ -180,6 +191,10 @@ bool is_name(char c) {
     return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
+bool is_digit(char c) {
+    return c >= '0' && c <= '9';
+}
+
 bool is_whitespace(char c) {
     return c == ' ' || c == '\t' || c == '\r';
 }
@@ -218,6 +233,42 @@ void lex_string(Lexer *lexer) {
     save_token(lexer, TK_STRING);
 }
 
+void lex_number(Lexer *lexer) {
+    bool is_negative = false;
+    int digits_count = 0;
+
+    if (chr(lexer) == '-') {
+        nchr(lexer);
+        is_negative = true;
+    }
+
+    while (is_digit(chr(lexer))) {
+        nchr(lexer);
+        ++digits_count;
+    }
+
+    if (digits_count == 0) {
+        invalid_number_error(lexer);
+    }
+
+    digits_count = 0;
+
+    if (chr(lexer) == '.') {
+        nchr(lexer);
+
+        while (is_digit(chr(lexer))) {
+            nchr(lexer);
+            ++digits_count;
+        }
+
+        if (digits_count == 0) {
+            invalid_number_error(lexer);
+        }
+    }
+
+    save_token(lexer, TK_NUMBER);
+}
+
 void lex_char(Lexer *lexer, Token_Kind kind) {
     nchr(lexer);
     save_token(lexer, kind);
@@ -234,6 +285,8 @@ void lex(Lexer *lexer) {
         switch (chr(lexer)) {
             case 'a'...'z':
             case 'A'...'Z': lex_name(lexer); break; 
+            case '0'...'9':
+            case '-': lex_number(lexer); break;
             case '=': lex_char(lexer, TK_EQUAL); break;
             case '{': lex_char(lexer, TK_LBRACE); break;
             case '#': lex_comment(lexer); break;

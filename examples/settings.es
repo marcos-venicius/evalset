@@ -4,6 +4,8 @@ root = {
     app_name = "testing some stuff" # this is the name of my app
     id = 129
     other = 129.19
+    negative = -10
+    negative_float = -10.230234
 
     route_names = {
         home = "Home"
