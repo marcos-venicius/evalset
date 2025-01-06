@@ -196,12 +196,12 @@ static void save_token(Lexer *lexer, Token_Kind kind) {
     }
 }
 
-static bool is_eof(char c) {
-    return c == '\0';
+static bool is_alpha(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
 static bool is_symbol(char c) {
-    return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    return c == '_' || is_alpha(c);
 }
 
 static bool is_digit(char c) {
@@ -267,12 +267,10 @@ static void lex_string(Lexer *lexer) {
 }
 
 static void lex_number(Lexer *lexer) {
-    bool is_negative = false;
     int digits_count = 0;
 
     if (chr(lexer) == '-') {
         nchr(lexer);
-        is_negative = true;
     }
 
     while (is_digit(chr(lexer))) {
@@ -321,9 +319,6 @@ Token *lex(Lexer *lexer) {
         lexer->bcol = lexer->loc.col;
 
         switch (chr(lexer)) {
-            case 'a'...'z':
-            case 'A'...'Z': lex_symbol(lexer); break; 
-            case '0'...'9':
             case '-': lex_number(lexer); break;
             case '=': lex_char(lexer, TK_EQUAL); break;
             case '*': lex_char(lexer, TK_STAR); break;
@@ -341,7 +336,15 @@ Token *lex(Lexer *lexer) {
                 lex_eof(lexer);
                 lexing = false;
             } break;
-            default: throw_error(unrecognized_char_error, lexer); break;
+            default: {
+                if (is_alpha(chr(lexer))) {
+                    lex_symbol(lexer);
+                } else if (is_digit(chr(lexer))) {
+                    lex_number(lexer);
+                } else {
+                    throw_error(unrecognized_char_error, lexer);
+                }
+            } break;
         }
     }
 
