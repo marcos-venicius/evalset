@@ -9,10 +9,16 @@ typedef enum {
     TK_SYM = 0,
     TK_EQUAL,
     TK_LBRACE,
+    TK_RBRACE,
+    TK_LSQUARE,
+    TK_RSQUARE,
     TK_NEWLINE,
     TK_COMMENT,
     TK_STRING,
-    TK_NUMBER
+    TK_NUMBER,
+
+    TK_PATH_ROOT,
+    TK_PATH_CHUNK
 } Token_Kind;
 
 typedef struct Token Token;
@@ -54,6 +60,12 @@ static const char *token_kind_name(Token_Kind kind) {
             return "EQUAL";
         case TK_LBRACE:
             return "LBRACE";
+        case TK_RBRACE:
+            return "RBRACE";
+        case TK_LSQUARE:
+            return "LSQUARE";
+        case TK_RSQUARE:
+            return "RSQUARE";
         case TK_NEWLINE:
             return "NEWLINE";
         case TK_COMMENT:
@@ -62,6 +74,10 @@ static const char *token_kind_name(Token_Kind kind) {
             return "STRING";
         case TK_NUMBER:
             return "NUMBER";
+        case TK_PATH_ROOT:
+            return "TK_PATH_ROOT";
+        case TK_PATH_CHUNK:
+            return "TK_PATH_CHUNK";
         default:
             assert(0 && "invalid token kind");
     }
@@ -79,6 +95,14 @@ static void invalid_number_error(Lexer *lexer) {
     print_tokens();
 
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid number '%.*s'\n", lexer->filename, lexer->line, lexer->col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
+    lexer_free(lexer);
+    exit(1);
+}
+
+static void invalid_path_chunk_error(Lexer *lexer) {
+    print_tokens();
+
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid path chunk '%.*s'\n", lexer->filename, lexer->line, lexer->col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
     lexer_free(lexer);
     exit(1);
 }
@@ -209,6 +233,24 @@ void lex_name(Lexer *lexer) {
     save_token(lexer, TK_SYM);
 }
 
+// Path chunk format: ^\/(([a-z]*)([A-Z]*)(_*))*
+void lex_path_chunk(Lexer *lexer) {
+    if (chr(lexer) != '/') invalid_path_chunk_error(lexer);
+
+    nchr(lexer);
+
+    int path_size = 0;
+
+    while (is_name(chr(lexer))) {
+        ++path_size;
+        nchr(lexer);
+    }
+
+    if (path_size == 0) invalid_path_chunk_error(lexer);
+
+    save_token(lexer, TK_PATH_CHUNK);
+}
+
 void lex_comment(Lexer *lexer) {
     while (chr(lexer) != '\n') nchr(lexer);
 
@@ -288,7 +330,12 @@ void lex(Lexer *lexer) {
             case '0'...'9':
             case '-': lex_number(lexer); break;
             case '=': lex_char(lexer, TK_EQUAL); break;
+            case '$': lex_char(lexer, TK_PATH_ROOT); break;
+            case '/': lex_path_chunk(lexer); break;
             case '{': lex_char(lexer, TK_LBRACE); break;
+            case '}': lex_char(lexer, TK_RBRACE); break;
+            case '[': lex_char(lexer, TK_LSQUARE); break;
+            case ']': lex_char(lexer, TK_RSQUARE); break;
             case '#': lex_comment(lexer); break;
             case '"': lex_string(lexer); break;
             case '\n': lex_char(lexer, TK_NEWLINE); break;
