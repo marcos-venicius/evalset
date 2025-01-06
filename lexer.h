@@ -11,10 +11,12 @@ typedef enum {
     TK_RSQUARE,
     TK_NEWLINE,
     TK_COMMENT,
-    TK_STRING,
-    TK_NUMBER,
     TK_STAR,
     TK_PLUS,
+
+    TK_STRING,
+    TK_INTEGER,
+    TK_FLOAT,
 
     TK_PATH_ROOT,
     TK_PATH_CHUNK

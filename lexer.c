@@ -62,8 +62,10 @@ const char *token_kind_name(Token_Kind kind) {
             return "COMMENT";
         case TK_STRING:
             return "STRING";
-        case TK_NUMBER:
-            return "NUMBER";
+        case TK_INTEGER:
+            return "INTEGER";
+        case TK_FLOAT:
+            return "FLOAT";
         case TK_PATH_ROOT:
             return "TK_PATH_ROOT";
         case TK_PATH_CHUNK:
@@ -281,8 +283,11 @@ static void lex_number(Lexer *lexer) {
     if (digits_count == 0) throw_error(invalid_number_error, lexer);
 
     digits_count = 0;
+    bool is_floating = false;
 
     if (chr(lexer) == '.') {
+        is_floating = true;
+
         nchr(lexer);
 
         while (is_digit(chr(lexer))) {
@@ -295,7 +300,7 @@ static void lex_number(Lexer *lexer) {
 
     if (is_symbol(chr(lexer))) throw_error(unexpected_char_error, lexer);
 
-    save_token(lexer, TK_NUMBER);
+    save_token(lexer, is_floating ? TK_FLOAT : TK_INTEGER);
 }
 
 static void lex_char(Lexer *lexer, Token_Kind kind) {
