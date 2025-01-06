@@ -12,7 +12,6 @@ typedef struct {
     const char *filename;
 } Lexer;
 
-
 Lexer create_lexer(const char *filename) {
     FILE *fptr = fopen(filename, "r");
 
@@ -29,6 +28,8 @@ Lexer create_lexer(const char *filename) {
         .filename = filename,
         .col = 1,
         .line = 1,
+        .cursor = 0,
+        .bot = 0,
         .content_size = stream_size
     };
 
@@ -47,6 +48,35 @@ Lexer create_lexer(const char *filename) {
     fclose(fptr);
 
     return lexer;
+}
+
+// Get the current char without moving the cursor
+char chr(Lexer *lexer) {
+    if (lexer->cursor < lexer->content_size) {
+        return lexer->content[lexer->cursor];
+    }
+
+    return '\0';
+}
+
+// Advances the cursor to the next char
+char nchr(Lexer *lexer) {
+    if (lexer->cursor + 1 < lexer->content_size) {
+        ++lexer->cursor;
+
+        return chr(lexer);
+    }
+
+    return '\0';
+}
+
+// Lookahead of 1 char
+char pchr(Lexer *lexer) {
+    if (lexer->cursor + 1 < lexer->content_size) {
+        return lexer->content[lexer->cursor + 1];
+    }
+
+    return '\0';
 }
 
 void lexer_free(Lexer *lexer) {
