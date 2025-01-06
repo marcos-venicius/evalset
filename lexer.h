@@ -52,6 +52,7 @@ typedef struct {
 
 void print_tokens();
 const char *token_kind_name(Token_Kind kind);
+const char *token_kind_value(Token_Kind kind);
 
 Lexer create_lexer(const char *filename);
 Token *lex(Lexer *lexer);

@@ -40,6 +40,45 @@ void print_tokens() {
     }
 }
 
+const char *token_kind_value(Token_Kind kind) {
+    switch (kind) {
+        case TK_EOF:
+            return "<eof>";
+        case TK_SYM:
+            return "<symbol>";
+        case TK_EQUAL:
+            return "=";
+        case TK_LBRACE:
+            return "{";
+        case TK_RBRACE:
+            return "}";
+        case TK_LSQUARE:
+            return "[";
+        case TK_RSQUARE:
+            return "]";
+        case TK_NEWLINE:
+            return "<newline>";
+        case TK_COMMENT:
+            return "#";
+        case TK_STRING:
+            return "\"";
+        case TK_INTEGER:
+            return "<integer>";
+        case TK_FLOAT:
+            return "<float>";
+        case TK_PATH_ROOT:
+            return "$";
+        case TK_PATH_CHUNK:
+            return "/...";
+        case TK_STAR:
+            return "*";
+        case TK_PLUS:
+            return "+";
+        default:
+            assert(0 && "invalid token kind");
+    }
+}
+
 const char *token_kind_name(Token_Kind kind) {
     switch (kind) {
         case TK_EOF:
