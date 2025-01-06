@@ -16,6 +16,8 @@ typedef enum {
     TK_COMMENT,
     TK_STRING,
     TK_NUMBER,
+    TK_STAR,
+    TK_PLUS,
 
     TK_PATH_ROOT,
     TK_PATH_CHUNK
@@ -78,13 +80,23 @@ static const char *token_kind_name(Token_Kind kind) {
             return "TK_PATH_ROOT";
         case TK_PATH_CHUNK:
             return "TK_PATH_CHUNK";
+        case TK_STAR:
+            return "TK_STAR";
+        case TK_PLUS:
+            return "TK_PLUS";
         default:
             assert(0 && "invalid token kind");
     }
 }
 
-static void unrecognized_char_error(Lexer *lexer) {
+static void error() {
+    #if DEBUG
     print_tokens();
+    #endif
+}
+
+static void unrecognized_char_error(Lexer *lexer) {
+    error();
 
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unrecognized character '%c'\n", lexer->filename, lexer->line, lexer->col, chr(lexer));
     lexer_free(lexer);
@@ -92,7 +104,7 @@ static void unrecognized_char_error(Lexer *lexer) {
 }
 
 static void invalid_number_error(Lexer *lexer) {
-    print_tokens();
+    error();
 
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid number '%.*s'\n", lexer->filename, lexer->line, lexer->col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
     lexer_free(lexer);
@@ -100,7 +112,7 @@ static void invalid_number_error(Lexer *lexer) {
 }
 
 static void invalid_path_chunk_error(Lexer *lexer) {
-    print_tokens();
+    error();
 
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid path chunk '%.*s'\n", lexer->filename, lexer->line, lexer->col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
     lexer_free(lexer);
@@ -108,6 +120,8 @@ static void invalid_path_chunk_error(Lexer *lexer) {
 }
 
 static void unterminated_string_error(Lexer *lexer) {
+    error();
+
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unterminated string\n", lexer->filename, lexer->bline, lexer->bcol);
     lexer_free(lexer);
     exit(1);
@@ -177,6 +191,8 @@ char nchr(Lexer *lexer) {
         }
 
         return chr(lexer);
+    } else if (lexer->cursor < lexer->content_size) {
+        ++lexer->cursor;
     }
 
     return '\0';
@@ -330,6 +346,8 @@ void lex(Lexer *lexer) {
             case '0'...'9':
             case '-': lex_number(lexer); break;
             case '=': lex_char(lexer, TK_EQUAL); break;
+            case '*': lex_char(lexer, TK_STAR); break;
+            case '+': lex_char(lexer, TK_PLUS); break;
             case '$': lex_char(lexer, TK_PATH_ROOT); break;
             case '/': lex_path_chunk(lexer); break;
             case '{': lex_char(lexer, TK_LBRACE); break;
