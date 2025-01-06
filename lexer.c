@@ -7,8 +7,18 @@
 #include <string.h>
 #include <errno.h>
 
+#define throw_error(call, lexer) \
+    do { \
+        error(); \
+        call(lexer); \
+        lexer_free(lexer); \
+        exit(1); \
+    } while(0);
+
 static Token *tokens_head = NULL;
 static Token *tokens_tail = NULL;
+
+static char chr(Lexer *lexer);
 
 void print_tokens() {
     Token *curr = tokens_head;
@@ -67,46 +77,6 @@ const char *token_kind_name(Token_Kind kind) {
     }
 }
 
-// Get the current char without moving the cursor
-static char chr(Lexer *lexer) {
-    if (lexer->cursor < lexer->content_size) {
-        return lexer->content[lexer->cursor];
-    }
-
-    return '\0';
-}
-
-// Advances the cursor to the next char
-static char nchr(Lexer *lexer) {
-    if (lexer->cursor < lexer->content_size) {
-        char c = chr(lexer);
-
-        ++lexer->cursor;
-
-        if (c == '\n') {
-            lexer->loc.col = 1;
-            ++lexer->loc.line;
-        } else {
-            ++lexer->loc.col;
-        }
-
-        return chr(lexer);
-    } else if (lexer->cursor < lexer->content_size) {
-        ++lexer->cursor;
-    }
-
-    return '\0';
-}
-
-// Lookahead of 1 char
-static char pchr(Lexer *lexer) {
-    if (lexer->cursor + 1 < lexer->content_size) {
-        return lexer->content[lexer->cursor + 1];
-    }
-
-    return '\0';
-}
-
 static void error() {
     #if DEBUG
     print_tokens();
@@ -114,35 +84,23 @@ static void error() {
 }
 
 static void unrecognized_char_error(Lexer *lexer) {
-    error();
-
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unrecognized character '%c'\n", lexer->loc.filename, lexer->loc.line, lexer->loc.col, chr(lexer));
-    lexer_free(lexer);
-    exit(1);
+}
+
+static void unexpected_char_error(Lexer *lexer) {
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unexpected character '%c'\n", lexer->loc.filename, lexer->loc.line, lexer->loc.col, chr(lexer));
 }
 
 static void invalid_number_error(Lexer *lexer) {
-    error();
-
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid number '%.*s'\n", lexer->loc.filename, lexer->loc.line, lexer->loc.col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
-    lexer_free(lexer);
-    exit(1);
 }
 
 static void invalid_path_chunk_error(Lexer *lexer) {
-    error();
-
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid path chunk '%.*s'\n", lexer->loc.filename, lexer->loc.line, lexer->loc.col, lexer->cursor - lexer->bot, lexer->content + lexer->bot);
-    lexer_free(lexer);
-    exit(1);
 }
 
 static void unterminated_string_error(Lexer *lexer) {
-    error();
-
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unterminated string\n", lexer->loc.filename, lexer->bline, lexer->bcol);
-    lexer_free(lexer);
-    exit(1);
 }
 
 Lexer create_lexer(const char *filename) {
@@ -185,6 +143,37 @@ Lexer create_lexer(const char *filename) {
     fclose(fptr);
 
     return lexer;
+}
+
+// Get the current char without moving the cursor
+static char chr(Lexer *lexer) {
+    if (lexer->cursor < lexer->content_size) {
+        return lexer->content[lexer->cursor];
+    }
+
+    return '\0';
+}
+
+// Advances the cursor to the next char
+static char nchr(Lexer *lexer) {
+    if (lexer->cursor < lexer->content_size) {
+        char c = chr(lexer);
+
+        ++lexer->cursor;
+
+        if (c == '\n') {
+            lexer->loc.col = 1;
+            ++lexer->loc.line;
+        } else {
+            ++lexer->loc.col;
+        }
+
+        return chr(lexer);
+    } else if (lexer->cursor < lexer->content_size) {
+        ++lexer->cursor;
+    }
+
+    return '\0';
 }
 
 static void save_token(Lexer *lexer, Token_Kind kind) {
@@ -230,12 +219,14 @@ static void trim_whitespaces(Lexer *lexer) {
 static void lex_symbol(Lexer *lexer) {
     while (is_symbol(chr(lexer))) nchr(lexer);
 
+    if (is_digit(chr(lexer))) throw_error(unexpected_char_error, lexer);
+
     save_token(lexer, TK_SYM);
 }
 
 // Path chunk format: ^\/(([a-z]*)([A-Z]*)(_*))*
 static void lex_path_chunk(Lexer *lexer) {
-    if (chr(lexer) != '/') invalid_path_chunk_error(lexer);
+    if (chr(lexer) != '/') throw_error(invalid_path_chunk_error, lexer);
 
     nchr(lexer);
 
@@ -246,7 +237,7 @@ static void lex_path_chunk(Lexer *lexer) {
         nchr(lexer);
     }
 
-    if (path_size == 0) invalid_path_chunk_error(lexer);
+    if (path_size == 0) throw_error(invalid_path_chunk_error, lexer);
 
     save_token(lexer, TK_PATH_CHUNK);
 }
@@ -263,7 +254,7 @@ static void lex_string(Lexer *lexer) {
 
     while (chr(lexer) != '"') {
         if (chr(lexer) == '\n') {
-            unterminated_string_error(lexer);
+            throw_error(unterminated_string_error, lexer);
             break;
         }
 
@@ -289,9 +280,7 @@ static void lex_number(Lexer *lexer) {
         ++digits_count;
     }
 
-    if (digits_count == 0) {
-        invalid_number_error(lexer);
-    }
+    if (digits_count == 0) throw_error(invalid_number_error, lexer);
 
     digits_count = 0;
 
@@ -303,10 +292,10 @@ static void lex_number(Lexer *lexer) {
             ++digits_count;
         }
 
-        if (digits_count == 0) {
-            invalid_number_error(lexer);
-        }
+        if (digits_count == 0) throw_error(invalid_number_error, lexer);
     }
+
+    if (is_symbol(chr(lexer))) throw_error(unexpected_char_error, lexer);
 
     save_token(lexer, TK_NUMBER);
 }
@@ -352,7 +341,7 @@ Token *lex(Lexer *lexer) {
                 lex_eof(lexer);
                 lexing = false;
             } break;
-            default: unrecognized_char_error(lexer); break;
+            default: throw_error(unrecognized_char_error, lexer); break;
         }
     }
 
