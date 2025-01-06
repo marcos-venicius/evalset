@@ -55,6 +55,12 @@ const char *token_kind_value(Token_Kind kind) {
             return "<eof>";
         case TK_SYM:
             return "<symbol>";
+        case TK_TRUE:
+            return "true";
+        case TK_FALSE:
+            return "false";
+        case TK_NIL:
+            return "nil";
         case TK_EQUAL:
             return "=";
         case TK_LBRACE:
@@ -94,6 +100,12 @@ const char *token_kind_name(Token_Kind kind) {
             return "EOF";
         case TK_SYM:
             return "SYM";
+        case TK_TRUE:
+            return "TRUE";
+        case TK_FALSE:
+            return "FALSE";
+        case TK_NIL:
+            return "NIL";
         case TK_EQUAL:
             return "EQUAL";
         case TK_LBRACE:
@@ -229,6 +241,22 @@ static char nchr(Lexer *lexer) {
     return '\0';
 }
 
+static Token_Kind get_kind_keyword(Token *token, Token_Kind fallback) {
+    if (strncmp(token->content, "true", token->content_size) == 0) {
+        return TK_TRUE;
+    }
+
+    if (strncmp(token->content, "false", token->content_size) == 0) {
+        return TK_FALSE;
+    }
+
+    if (strncmp(token->content, "nil", token->content_size) == 0) {
+        return TK_NIL;
+    }
+
+    return fallback;
+}
+
 static void save_token(Lexer *lexer, Token_Kind kind) {
     Token *token = calloc(1, sizeof(Token));
    
@@ -239,8 +267,13 @@ static void save_token(Lexer *lexer, Token_Kind kind) {
     token->content = lexer->content + lexer->bot;
     token->content_size = lexer->cursor - lexer->bot;
 
-    token->kind = kind;
     token->next = NULL;
+
+    if (kind == TK_SYM) {
+        token->kind = get_kind_keyword(token, TK_SYM);
+    } else {
+        token->kind = kind;
+    }
 
     if (tokens_head == NULL) {
         tokens_head = token;

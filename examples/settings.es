@@ -6,6 +6,9 @@ root = {
     other = 129.19
     negative = -10
     negative_float = -10.230234
+    boolean_true = true
+    boolean_false = false
+    nullable = nil
 
     route_names = {
         home = "Home"

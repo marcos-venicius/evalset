@@ -6,6 +6,11 @@ typedef enum {
 
     TK_SYM,
 
+    // KEYWORDS
+    TK_NIL,
+    TK_TRUE,
+    TK_FALSE,
+
     // Braces
     TK_LBRACE,
     TK_RBRACE,
