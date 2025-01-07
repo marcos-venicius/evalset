@@ -168,6 +168,10 @@ static void unterminated_string_error(Lexer *lexer) {
     fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m unterminated string\n", lexer->loc.filename, lexer->bline, lexer->bcol);
 }
 
+static void invalid_escape_character_error(Lexer *lexer) {
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m invalid escape character '\\%c'\n", lexer->loc.filename, lexer->loc.line, lexer->loc.col, lexer->content[lexer->cursor + 1]);
+}
+
 // For now, reading the file here is OK.
 // But, in the future we'll need to abstract this to the own function, so we can deal with
 // multiple imports
@@ -217,6 +221,14 @@ Lexer create_lexer(const char *filename) {
 static char chr(Lexer *lexer) {
     if (lexer->cursor < lexer->content_size) {
         return lexer->content[lexer->cursor];
+    }
+
+    return '\0';
+}
+
+static char pchr(Lexer *lexer) {
+    if (lexer->cursor + 1 < lexer->content_size) {
+        return lexer->content[lexer->cursor + 1];
     }
 
     return '\0';
@@ -341,8 +353,26 @@ static void lex_comment(Lexer *lexer) {
 static void lex_string(Lexer *lexer) {
     nchr(lexer);
 
-    while (chr(lexer) != '"') {
-        if (chr(lexer) == '\n') {
+    bool lexing = true;
+
+    while (chr(lexer) != '"' && lexing) {
+        if (chr(lexer) == '\\') {
+            switch (pchr(lexer)) {
+                case '"':
+                case '\\':
+                case 'n':
+                case 't':
+                case 'b':
+                case 'r':
+                case 'f':
+                    nchr(lexer);
+                    break;
+                default:
+                    lexing = false;
+                    throw_error(invalid_escape_character_error, lexer);
+                    break;
+            }
+        } else if (chr(lexer) == '\n') {
             throw_error(unterminated_string_error, lexer);
             break;
         }
