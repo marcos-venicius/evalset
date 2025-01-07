@@ -1,6 +1,8 @@
 #ifndef LEXER_H_
 #define LEXER_H_
 
+#include <stdbool.h>
+
 typedef enum {
     TK_EOF = 0,
 
@@ -86,11 +88,14 @@ typedef struct {
     Location loc;
 } Lexer;
 
-void print_tokens();
+void print_tokens(Token *head);
 const char *token_kind_name(Token_Kind kind);
 const char *token_kind_value(Token_Kind kind);
 
 Lexer create_lexer(const char *filename);
+// This function returns true if the lexing was done successfully and false if not
+// indicating that some errors was displayed to the user.
+// If the function returns true, you'll not have any value returned in the `tokens_out`
 Token *lex(Lexer *lexer);
 void lexer_free(Lexer *lexer);
 

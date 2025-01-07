@@ -1,7 +1,6 @@
 #include "./lexer.h"
 
 #include <assert.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,9 +13,7 @@
     do { \
         error(); \
         call(lexer); \
-        lexer_free(lexer); \
-        exit(1); \
-    } while(0); \
+    } while (0); \
 
 // I don't think we need to put this inside the lexer
 // I'm not sure if would make sense, so, I prefer to create this in a static segment and "private"
@@ -24,21 +21,25 @@
 static Token *tokens_head = NULL;
 static Token *tokens_tail = NULL;
 
+static unsigned int errors = 0;
+
 static char chr(Lexer *lexer);
 
-void print_tokens() {
-    Token *curr = tokens_head;
+void print_tokens(Token *head) {
+    Token *curr = head;
 
     while (curr != NULL) {
+        const char *kind_name = token_kind_name(curr->kind);
+
         switch (curr->kind) {
             case TK_NEWLINE:
-                printf("NOTE %s:%d:%d: \\n (%s)\n", curr->loc.filename, curr->loc.line, curr->loc.col, token_kind_name(curr->kind));
+                printf("NOTE %s:%d:%d: \\n (%s)\n", curr->loc.filename, curr->loc.line, curr->loc.col, kind_name);
                 break;
             case TK_EOF:
-                printf("NOTE %s:%d:%d: <eof> (%s)\n", curr->loc.filename, curr->loc.line, curr->loc.col, token_kind_name(curr->kind));
+                printf("NOTE %s:%d:%d: <eof> (%s)\n", curr->loc.filename, curr->loc.line, curr->loc.col, kind_name);
                 break;
             default:
-                printf("NOTE %s:%d:%d: %.*s (%s)\n", curr->loc.filename, curr->loc.line, curr->loc.col, (int)curr->content_size, curr->content, token_kind_name(curr->kind));
+                printf("NOTE %s:%d:%d: %.*s (%s)\n", curr->loc.filename, curr->loc.line, curr->loc.col, (int)curr->content_size, curr->content, kind_name);
                 break;
         }
 
@@ -140,8 +141,10 @@ const char *token_kind_name(Token_Kind kind) {
 }
 
 static void error() {
+    ++errors;
+
     #if DEBUG
-    print_tokens();
+    print_tokens(tokens_head);
     #endif
 }
 
@@ -434,11 +437,15 @@ Token *lex(Lexer *lexer) {
                 } else {
                     throw_error(unrecognized_char_error, lexer);
                 }
+
+                nchr(lexer);
             } break;
         }
     }
 
-    return tokens_head;
+    if (errors == 0) return tokens_head;
+
+    return NULL;
 }
 
 void lexer_free(Lexer *lexer) {
@@ -458,9 +465,12 @@ void lexer_free(Lexer *lexer) {
 int main() {
     Lexer lexer = create_lexer("./examples/settings.es");
 
-    lex(&lexer);
+    Token *head;
 
-    print_tokens();
+    if ((head = lex(&lexer))) {
+        print_tokens(head);
+    }
+
     lexer_free(&lexer);
 
     return 0;
