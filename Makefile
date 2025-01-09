@@ -1,8 +1,14 @@
 CXX = clang
 CFLAGS = -Wall -Wextra -pedantic -ggdb
 
-lexer: lexer.c
-	$(CXX) $(CFLAGS) -o $@ $<
+LEXER = lexer.c io.c
+LEXER_OBJ = $(LEXER:.c=.o)
+
+lexer: $(LEXER_OBJ)
+	$(CXX) $(CFLAGS) -o $@ $^
+
+%.o: %.c
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf lexer
+	rm -rf lexer *.o

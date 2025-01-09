@@ -2,6 +2,7 @@
 #define LEXER_H_
 
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef enum {
     TK_EOF = 0,
@@ -92,7 +93,7 @@ void print_tokens(Token *head);
 const char *token_kind_name(Token_Kind kind);
 const char *token_kind_value(Token_Kind kind);
 
-Lexer create_lexer(const char *filename);
+Lexer create_lexer(const char *filename, char *data, size_t data_size);
 // This function returns a pointer if the lexing was done successfully and NULL if not
 // indicating that some errors was displayed to the user.
 Token *lex(Lexer *lexer);

@@ -1,4 +1,5 @@
 #include "./lexer.h"
+#include "./io.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -175,18 +176,7 @@ static void invalid_escape_character_error(Lexer *lexer) {
 // For now, reading the file here is OK.
 // But, in the future we'll need to abstract this to the own function, so we can deal with
 // multiple imports
-Lexer create_lexer(const char *filename) {
-    FILE *fptr = fopen(filename, "r");
-
-    if (fptr == NULL) {
-        fprintf(stderr, "could not open file %s due to: %s\n", filename, strerror(errno));
-        exit(1);
-    }
-
-    fseek(fptr, 0, SEEK_END);
-    const size_t stream_size = ftell(fptr);
-    rewind(fptr);
-    
+Lexer create_lexer(const char *filename, char *data, size_t data_size) {
     Lexer lexer = (Lexer){
         .loc = (Location){
             .filename = filename,
@@ -197,22 +187,9 @@ Lexer create_lexer(const char *filename) {
         .bcol = 1,
         .cursor = 0,
         .bot = 0,
-        .content_size = stream_size
+        .content_size = data_size,
+        .content = data
     };
-
-    lexer.content = malloc((stream_size + 1) * sizeof(char));
-
-    const size_t read_size = fread(lexer.content, 1, stream_size, fptr);
-
-    if (read_size != stream_size) {
-        fprintf(stderr, "could not read file %s due to: %s\n", filename, strerror(errno));
-        fclose(fptr);
-        exit(1);
-    }
-
-    lexer.content[stream_size] = '\0';
-
-    fclose(fptr);
 
     return lexer;
 }
@@ -493,7 +470,13 @@ void lexer_free(Lexer *lexer) {
 }
 
 int main(void) {
-    Lexer lexer = create_lexer("./examples/settings.es");
+    const char *filename = "./examples/settings.es";
+
+    char *content;
+
+    size_t data_size = read_from_file(filename, &content);
+
+    Lexer lexer = create_lexer(filename, content, data_size);
 
     Token *head;
 
