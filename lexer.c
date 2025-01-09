@@ -140,7 +140,7 @@ const char *token_kind_name(Token_Kind kind) {
     }
 }
 
-static void error() {
+static void error(void) {
     ++errors;
 
     #if DEBUG
@@ -492,7 +492,7 @@ void lexer_free(Lexer *lexer) {
     }
 }
 
-int main() {
+int main(void) {
     Lexer lexer = create_lexer("./examples/settings.es");
 
     Token *head;
