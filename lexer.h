@@ -15,6 +15,8 @@ typedef enum {
     TK_FALSE,
 
     // Braces
+    TK_LPAREN,
+    TK_RPAREN,
     TK_LBRACE,
     TK_RBRACE,
     TK_LSQUARE,
@@ -33,6 +35,9 @@ typedef enum {
     TK_EQUAL,
     TK_STAR,
     TK_PLUS,
+    TK_SLASH,
+    TK_MINUS,
+    TK_MOD,
 
     // Data types
     TK_STRING,
