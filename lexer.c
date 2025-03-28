@@ -91,6 +91,16 @@ const char *token_kind_value(Token_Kind kind) {
             return "*";
         case TK_PLUS:
             return "+";
+        case TK_MOD:
+            return "%";
+        case TK_MINUS:
+            return "-";
+        case TK_SLASH:
+            return "/";
+        case TK_LPAREN:
+            return "(";
+        case TK_RPAREN:
+            return ")";
         default:
             assert(0 && "invalid token kind");
     }
@@ -110,10 +120,20 @@ const char *token_kind_name(Token_Kind kind) {
             return "NIL";
         case TK_EQUAL:
             return "EQUAL";
+        case TK_SLASH:
+            return "SLASH";
+        case TK_MOD:
+            return "MOD";
+        case TK_MINUS:
+            return "MINUS";
         case TK_LBRACE:
             return "LBRACE";
         case TK_RBRACE:
             return "RBRACE";
+        case TK_LPAREN:
+            return "LPAREN";
+        case TK_RPAREN:
+            return "RPAREN";
         case TK_LSQUARE:
             return "LSQUARE";
         case TK_RSQUARE:
@@ -315,9 +335,12 @@ static void lex_path_chunk(Lexer *lexer) {
         nchr(lexer);
     }
 
-    if (path_size == 0) throw_error(invalid_path_chunk_error, lexer);
-
-    save_token(lexer, TK_PATH_CHUNK);
+    if (path_size == 0) {
+        // throw_error(invalid_path_chunk_error, lexer);
+        save_token(lexer, TK_SLASH);
+    } else {
+        save_token(lexer, TK_PATH_CHUNK);
+    }
 }
 
 static void lex_comment(Lexer *lexer) {
@@ -374,27 +397,30 @@ static void lex_number(Lexer *lexer) {
         ++digits_count;
     }
 
-    if (digits_count == 0) throw_error(invalid_number_error, lexer);
+    if (digits_count == 0) {
+        // throw_error(invalid_number_error, lexer);
+        save_token(lexer, TK_MINUS);
+    } else {
+        digits_count = 0;
+        bool is_floating = false;
 
-    digits_count = 0;
-    bool is_floating = false;
+        if (chr(lexer) == '.') {
+            is_floating = true;
 
-    if (chr(lexer) == '.') {
-        is_floating = true;
-
-        nchr(lexer);
-
-        while (is_digit(chr(lexer))) {
             nchr(lexer);
-            ++digits_count;
+
+            while (is_digit(chr(lexer))) {
+                nchr(lexer);
+                ++digits_count;
+            }
+
+            if (digits_count == 0) throw_error(invalid_number_error, lexer);
         }
 
-        if (digits_count == 0) throw_error(invalid_number_error, lexer);
+        if (is_symbol(chr(lexer))) throw_error(unexpected_char_error, lexer);
+
+        save_token(lexer, is_floating ? TK_FLOAT : TK_INTEGER);
     }
-
-    if (is_symbol(chr(lexer))) throw_error(unexpected_char_error, lexer);
-
-    save_token(lexer, is_floating ? TK_FLOAT : TK_INTEGER);
 }
 
 static void lex_char(Lexer *lexer, Token_Kind kind) {
@@ -424,11 +450,14 @@ Token *lex(Lexer *lexer) {
             case '*': lex_char(lexer, TK_STAR); break;
             case '+': lex_char(lexer, TK_PLUS); break;
             case '$': lex_char(lexer, TK_PATH_ROOT); break;
+            case '%': lex_char(lexer, TK_MOD); break;
             case '/': lex_path_chunk(lexer); break;
             case '{': lex_char(lexer, TK_LBRACE); break;
             case '}': lex_char(lexer, TK_RBRACE); break;
             case '[': lex_char(lexer, TK_LSQUARE); break;
             case ']': lex_char(lexer, TK_RSQUARE); break;
+            case '(': lex_char(lexer, TK_LPAREN); break;
+            case ')': lex_char(lexer, TK_RPAREN); break;
             case '#': lex_comment(lexer); break;
             case '"': lex_string(lexer); break;
             case '\n': lex_char(lexer, TK_NEWLINE); break;
