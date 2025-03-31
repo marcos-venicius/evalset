@@ -1,11 +1,9 @@
 #include "./lexer.h"
-#include "./io.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 // This do-while(0) is a hack to avoid some issues. https://www.geeksforgeeks.org/multiline-macros-in-c/
 // As the article says, we can wrap with parenthesis, but we're using -pedantic and
@@ -499,24 +497,4 @@ void lexer_free(Lexer *lexer) {
 
         curr = next;
     }
-}
-
-int main(void) {
-    const char *filename = "./examples/settings.es";
-
-    char *content;
-
-    size_t data_size = read_from_file(filename, &content);
-
-    Lexer lexer = create_lexer(filename, content, data_size);
-
-    Token *head;
-
-    if ((head = lex(&lexer))) {
-        print_tokens(head);
-    }
-
-    lexer_free(&lexer);
-
-    return 0;
 }
