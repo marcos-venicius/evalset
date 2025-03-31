@@ -39,6 +39,8 @@ typedef enum {
     TK_MINUS,
     TK_MOD,
 
+    TK_COMMA,
+
     // Data types
     TK_STRING,
     TK_INTEGER,

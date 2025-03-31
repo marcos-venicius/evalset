@@ -1,14 +1,17 @@
 CXX = clang
 CFLAGS = -Wall -Wextra -pedantic -ggdb
 
-LEXER = lexer.c io.c
-LEXER_OBJ = $(LEXER:.c=.o)
+evalset: parser.o lexer.o io.o
+	$(CXX) $(CFLAGS) -o evalset $^
 
-lexer: $(LEXER_OBJ)
-	$(CXX) $(CFLAGS) -o $@ $^
+parser.o: parser.h
+	$(CXX) $(CFLAGS) -c parser.c -o parser.o
 
-%.o: %.c
-	$(CXX) $(CFLAGS) -c $< -o $@
+lexer.o: lexer.c lexer.h io.c io.h
+	$(CXX) $(CFLAGS) -c lexer.c -o lexer.o
+
+io.o: io.c io.h
+	$(CXX) $(CFLAGS) -c io.c -o io.o
 
 clean:
-	rm -rf lexer *.o
+	rm -rf evalset *.o

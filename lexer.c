@@ -156,6 +156,8 @@ const char *token_kind_name(Token_Kind kind) {
             return "TK_STAR";
         case TK_PLUS:
             return "TK_PLUS";
+        case TK_COMMA:
+            return "TK_COMMA";
         default:
             assert(0 && "invalid token kind");
     }
@@ -451,6 +453,7 @@ Token *lex(Lexer *lexer) {
             case '+': lex_char(lexer, TK_PLUS); break;
             case '$': lex_char(lexer, TK_PATH_ROOT); break;
             case '%': lex_char(lexer, TK_MOD); break;
+            case ',': lex_char(lexer, TK_COMMA); break;
             case '/': lex_path_chunk(lexer); break;
             case '{': lex_char(lexer, TK_LBRACE); break;
             case '}': lex_char(lexer, TK_RBRACE); break;

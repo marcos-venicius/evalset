@@ -27,7 +27,7 @@ routes = [
         path = $/root/base_url + "/"
         name = $/root/route_names/home
         title = $/root/titles/home
-    }
+    },
     {
         id = $/root/id * 3
         path = $/root/base_url + "/dashboard"
@@ -35,3 +35,4 @@ routes = [
         title = $/root/titles/dashboard
     }
 ]
+
