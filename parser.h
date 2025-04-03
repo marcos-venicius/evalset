@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include "./lexer.h"
 
+#define DEFAULT_ARRAY_CAPACITY 100
+
 typedef struct Var Var;
 
 typedef enum {
@@ -62,10 +64,28 @@ struct Var {
 };
 
 typedef struct {
-    size_t capacity;
-    size_t length;
+    size_t length, capacity;
     Var *data;
 } Parser;
+
+#define array_append(array, item) do { \
+    if ((array)->length >= (array)->capacity) { \
+        if ((array)->capacity == 0) (array)->capacity = DEFAULT_ARRAY_CAPACITY; \
+        else (array)->capacity = (array)->capacity * 2; \
+        void *output = realloc((array)->data, (array)->capacity * sizeof((array)->data[0])); \
+        assert(output != NULL && "failed to reallocate array"); \
+        (array)->data = output; \
+    } \
+    (array)->data[(array)->length++] = item; \
+} while (0);
+
+#define array_free(array) do { \
+    free((array)->data); \
+    (array)->capacity = DEFAULT_ARRAY_CAPACITY; \
+    (array)->length = 0; \
+} while (0);
+
+#define array_flush(array) (array)->length = 0;
 
 Parser parse_tokens(Token *head);
 void parser_free(Parser parser);
