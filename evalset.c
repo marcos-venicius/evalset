@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "./lexer.h"
 #include "./parser.h"
 #include "./io.h"
@@ -18,6 +19,18 @@ int main(void) {
     }
 
     Parser parser = parse_tokens(head);
+
+    for (size_t i = 0; i < parser.length; i++) {
+        Var var = parser.data[i];
+
+        printf(
+            "%.*s = %.*s\n",
+            (int)var.name.size,
+            var.name.value,
+            (int)var.string.size,
+            var.string.value
+        );
+    }
 
     parser_free(parser);
     lexer_free(&lexer);

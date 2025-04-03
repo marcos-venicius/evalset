@@ -4,7 +4,7 @@ CFLAGS = -Wall -Wextra -pedantic -ggdb
 evalset: evalset.o parser.o lexer.o io.o
 	$(CXX) $(CFLAGS) -o evalset $^
 
-parser.o: parser.h parser.c
+parser.o: parser.h parser.c loc.h lexer.h
 	$(CXX) $(CFLAGS) -c parser.c -o parser.o
 
 lexer.o: lexer.c lexer.h

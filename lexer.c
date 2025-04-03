@@ -313,7 +313,6 @@ static bool is_whitespace(char c) {
 }
 
 // lexing
-
 static void lex_symbol(Lexer *lexer) {
     while (is_symbol(chr(lexer))) nchr(lexer);
 
@@ -346,7 +345,9 @@ static void lex_path_chunk(Lexer *lexer) {
 static void lex_comment(Lexer *lexer) {
     while (chr(lexer) != '\n') nchr(lexer);
 
-    save_token(lexer, TK_COMMENT);
+    nchr(lexer);
+    // maybe I'll save it to implement some kind of "prettier" later
+    // save_token(lexer, TK_COMMENT);
 }
 
 // TODO: basic string escape (\r \n \t \b \f .....)

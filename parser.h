@@ -20,7 +20,9 @@ typedef enum {
 } Var_Kind;
 
 typedef struct {
+    // sized string
     char *value;
+    size_t size;
 } String;
 
 typedef struct {
@@ -50,7 +52,7 @@ typedef struct {
 
 struct Var {
     Var_Kind kind;
-    char *name;
+    String name;
 
     union {
         String string;
