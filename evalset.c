@@ -23,13 +23,26 @@ int main(void) {
     for (size_t i = 0; i < parser.length; i++) {
         Var var = parser.data[i];
 
-        printf(
-            "%.*s = %.*s\n",
-            (int)var.name.size,
-            var.name.value,
-            (int)var.string.size,
-            var.string.value
-        );
+        switch (var.kind) {
+            case VK_STRING: {
+                printf(
+                    "%.*s = %.*s\n",
+                    (int)var.name.size,
+                    var.name.value,
+                    (int)var.string.size,
+                    var.string.value
+                );
+            } break;
+            case VK_INTEGER: {
+                printf(
+                    "%.*s = %ld\n",
+                    (int)var.name.size,
+                    var.name.value,
+                    var.integer.value
+                );
+            } break;
+            default: break;
+        }
     }
 
     parser_free(parser);

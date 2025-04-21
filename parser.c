@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "./parser.h"
 #include "./loc.h"
 #include "./lexer.h"
@@ -43,6 +44,62 @@ Token *expect_kind(Token **ref, Token_Kind kind) {
     return token;
 }
 
+void parse_string_variable(Parser *parser, Token *var_lhs, Token **tokens) {
+    Token *var_rhs = expect_kind(tokens, TK_STRING);
+
+    Var var = {
+        .kind = VK_STRING,
+        .name = {
+            .size = var_lhs->content_size,
+            .value = var_lhs->content
+        },
+        .string = {
+            .size = var_rhs->content_size,
+            .value = var_rhs->content
+        }
+    };
+
+    array_append(parser, var);
+}
+
+void parse_integer_variable(Parser *parser, Token *var_lhs, Token **tokens) {
+    Token *var_rhs = expect_kind(tokens, TK_INTEGER);
+
+    char *const number = calloc(var_rhs->content_size, sizeof(char));
+
+    char *endptr;
+
+    memcpy(number, var_rhs->content, var_rhs->content_size * sizeof(char));
+
+    long integer = strtol(number, &endptr, 10);
+
+    if (*endptr != '\0') {
+        fprintf(
+            stderr, 
+            LOC_ERROR_FMT" Invalid integer \033[1;35m%.*s\033[0m\n",
+            LOC_ERROR_ARG(var_rhs->loc),
+            (int)var_rhs->content_size,
+            var_rhs->content
+        );
+        exit(1);
+    }
+
+    free(number);
+
+    Var var = {
+        .kind = VK_INTEGER,
+        .name = {
+            .size = var_lhs->content_size,
+            .value = var_lhs->content
+        },
+        .integer = {
+            .value = integer
+        }
+    };
+
+    array_append(parser, var);
+}
+
 Parser parse_tokens(Token *head) {
     if (head == NULL) return (Parser){0};
 
@@ -51,25 +108,31 @@ Parser parse_tokens(Token *head) {
     Token *current = head;
 
     while (current->kind != TK_EOF) {
+        if (current->kind == TK_NEWLINE) {
+            current = current->next;
+            continue;
+        }
+
         Token *var_lhs = expect_kind(&current, TK_SYM);
         (void)expect_kind(&current, TK_EQUAL);
-        Token *var_rhs = expect_kind(&current, TK_STRING);
 
-        Var var1 = {
-            .kind = VK_STRING,
-            .name = {
-                .size = var_lhs->content_size,
-                .value = var_lhs->content
-            },
-            .string = {
-                .size = var_rhs->content_size,
-                .value = var_rhs->content
+        switch (current->kind) {
+            case TK_STRING: {
+                parse_string_variable(&parser, var_lhs, &current);
+            } break;
+            case TK_INTEGER: {
+                parse_integer_variable(&parser, var_lhs, &current);
+            } break;
+            default: {
+                fprintf(
+                    stderr,
+                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%s\033[0m\n",
+                    LOC_ERROR_ARG(current->loc),
+                    token_kind_value(current->kind)
+                );
+                exit(1);
             }
-        };
-
-        array_append(&parser, var1);
-
-        (void)expect_kind(&current, TK_NEWLINE);
+        }
     }
 
     return parser;

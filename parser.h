@@ -30,7 +30,7 @@ typedef struct {
 } Boolean;
 
 typedef struct {
-    int value;
+    long value;
 } Integer;
 
 typedef struct {
