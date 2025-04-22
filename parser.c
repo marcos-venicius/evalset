@@ -138,6 +138,23 @@ void parse_float_variable(Parser *parser, Token *var_lhs, Token **tokens) {
     array_append(parser, var);
 }
 
+void parse_bool_variable(Parser *parser, Token *var_lhs, bool value, Token **tokens) {
+    *tokens = (*tokens)->next;
+
+    Var var = {
+        .kind = VK_BOOLEAN,
+        .name = {
+            .size = var_lhs->content_size,
+            .value = var_lhs->content
+        },
+        .boolean = {
+            .value = value
+        }
+    };
+
+    array_append(parser, var);
+}
+
 Parser parse_tokens(Token *head) {
     if (head == NULL) return (Parser){0};
 
@@ -158,6 +175,8 @@ Parser parse_tokens(Token *head) {
             case TK_STRING: parse_string_variable(&parser, var_lhs, &current); break;
             case TK_INTEGER: parse_integer_variable(&parser, var_lhs, &current); break;
             case TK_FLOAT: parse_float_variable(&parser, var_lhs, &current); break;
+            case TK_TRUE: parse_bool_variable(&parser, var_lhs, true, &current); break;
+            case TK_FALSE: parse_bool_variable(&parser, var_lhs, false, &current); break;
 
             default: {
                 fprintf(

@@ -49,6 +49,14 @@ int main(void) {
                     var.floating.value
                 );
             } break;
+            case VK_BOOLEAN: {
+                printf(
+                    "%.*s = %s\n",
+                    (int)var.name.size,
+                    var.name.value,
+                    var.boolean.value == 1 ? "true" : "false"
+                );
+            } break;
             default: {
                 printf("unimplemented printing for kind: %s\n", var_kind_name(var.kind));
                 return 1;
