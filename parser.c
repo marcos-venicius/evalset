@@ -10,6 +10,8 @@ void advance_token(Token **ref) {
     if (ref != NULL && *ref != NULL) *ref = (*ref)->next;
 }
 
+#define unwrap_ref(ref) *ref;
+
 Token *expect_kind(Token **ref, Token_Kind kind) {
     const char *expected_kind = token_kind_value(kind);
 
@@ -173,6 +175,35 @@ void parse_nil_variable(Parser *parser, Token *var_lhs, Token **ref) {
     array_append(parser, var);
 }
 
+void parse_array_variable(Parser *parser, Token *var_lhs, Token **ref) {
+    advance_token(ref);
+
+    Token *current = unwrap_ref(ref);
+
+    if (current->kind == TK_RSQUARE) {
+        advance_token(ref);
+
+        Var var = {
+            .kind = VK_ARRAY,
+            .name = {
+                .size = var_lhs->content_size,
+                .value = var_lhs->content
+            },
+            .array = {
+                .capacity = 0,
+                .length = 0,
+                .data = NULL
+            }
+        };
+
+        array_append(parser, var);
+
+        return;
+    }
+
+    assert(0 && "unimplemented filled arrays parsing");
+}
+
 Parser parse_tokens(Token *head) {
     if (head == NULL) return (Parser){0};
 
@@ -190,12 +221,16 @@ Parser parse_tokens(Token *head) {
         (void)expect_kind(&current, TK_EQUAL);
 
         switch (current->kind) {
+            // TODO: decouple variable creation of expression parser
+            //       so we can reuse the expression parser when parsing arrays and call it
+            //       recursively
             case TK_STRING: parse_string_variable(&parser, var_lhs, &current); break;
             case TK_INTEGER: parse_integer_variable(&parser, var_lhs, &current); break;
             case TK_FLOAT: parse_float_variable(&parser, var_lhs, &current); break;
             case TK_TRUE: parse_bool_variable(&parser, var_lhs, true, &current); break;
             case TK_FALSE: parse_bool_variable(&parser, var_lhs, false, &current); break;
             case TK_NIL: parse_nil_variable(&parser, var_lhs, &current); break;
+            case TK_LSQUARE: parse_array_variable(&parser, var_lhs, &current); break;
 
             default: {
                 fprintf(
@@ -224,7 +259,7 @@ const char *var_kind_name(Var_Kind var_kind) {
         case VK_NIL: return "NIL";
         case VK_BOOLEAN: return "BOOLEAN";
         case VK_OBJECT: return "OBJECT";
-        case VK_ARRAY: return "OBJECT";
+        case VK_ARRAY: return "ARRAY";
         default: return "UNKNOWN";
     }
 }

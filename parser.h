@@ -15,8 +15,8 @@ typedef enum {
     VK_NIL,
     VK_BOOLEAN,
 
+    VK_ARRAY,
     VK_OBJECT,
-    VK_ARRAY
 } Var_Kind;
 
 typedef struct {

@@ -16,4 +16,6 @@ name = "Eval set"
 version = 1993
 booleanTrue = true
 boolean_false = false
+empty_array = []
 nullable = nil
+# empty_array = [10] # in progress
