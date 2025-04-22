@@ -37,9 +37,6 @@ typedef struct {
     double value;
 } Float;
 
-typedef struct {
-} Nil;
-
 // TODO: it'll be a hashmap (own implemenation)
 typedef struct {
 } Object;
@@ -61,7 +58,6 @@ struct Var {
         Float floating;
         Object object;
         Array array;
-        Nil nil;
     };
 };
 

@@ -6,6 +6,10 @@
 #include "./loc.h"
 #include "./lexer.h"
 
+void advance_token(Token **ref) {
+    if (ref != NULL && *ref != NULL) *ref = (*ref)->next;
+}
+
 Token *expect_kind(Token **ref, Token_Kind kind) {
     const char *expected_kind = token_kind_value(kind);
 
@@ -139,7 +143,7 @@ void parse_float_variable(Parser *parser, Token *var_lhs, Token **tokens) {
 }
 
 void parse_bool_variable(Parser *parser, Token *var_lhs, bool value, Token **tokens) {
-    *tokens = (*tokens)->next;
+    advance_token(tokens);
 
     Var var = {
         .kind = VK_BOOLEAN,
@@ -150,6 +154,20 @@ void parse_bool_variable(Parser *parser, Token *var_lhs, bool value, Token **tok
         .boolean = {
             .value = value
         }
+    };
+
+    array_append(parser, var);
+}
+
+void parse_nil_variable(Parser *parser, Token *var_lhs, Token **ref) {
+    advance_token(ref);
+
+    Var var = {
+        .kind = VK_NIL,
+        .name = {
+            .size = var_lhs->content_size,
+            .value = var_lhs->content
+        },
     };
 
     array_append(parser, var);
@@ -177,6 +195,7 @@ Parser parse_tokens(Token *head) {
             case TK_FLOAT: parse_float_variable(&parser, var_lhs, &current); break;
             case TK_TRUE: parse_bool_variable(&parser, var_lhs, true, &current); break;
             case TK_FALSE: parse_bool_variable(&parser, var_lhs, false, &current); break;
+            case TK_NIL: parse_nil_variable(&parser, var_lhs, &current); break;
 
             default: {
                 fprintf(

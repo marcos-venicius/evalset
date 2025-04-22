@@ -1,6 +1,5 @@
 # name = "App"
 # float = 10.05
-# nullable = nil
 # 
 # dependencies = [
 #     {
@@ -17,3 +16,4 @@ name = "Eval set"
 version = 1993
 booleanTrue = true
 boolean_false = false
+nullable = nil

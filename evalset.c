@@ -57,6 +57,13 @@ int main(void) {
                     var.boolean.value == 1 ? "true" : "false"
                 );
             } break;
+            case VK_NIL: {
+                printf(
+                    "%.*s = nil\n",
+                    (int)var.name.size,
+                    var.name.value
+                );
+            } break;
             default: {
                 printf("unimplemented printing for kind: %s\n", var_kind_name(var.kind));
                 return 1;

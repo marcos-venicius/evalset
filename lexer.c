@@ -475,8 +475,6 @@ Token *lex(Lexer *lexer) {
                 } else {
                     throw_error(unrecognized_char_error, lexer);
                 }
-
-                nchr(lexer);
             } break;
         }
     }
