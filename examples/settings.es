@@ -14,5 +14,6 @@
 #         url = "https://example.com"
 #     },
 # ]
+float = 3.1415
 name = "Eval set"
 version = 1993

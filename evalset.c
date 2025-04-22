@@ -41,7 +41,18 @@ int main(void) {
                     var.integer.value
                 );
             } break;
-            default: break;
+            case VK_FLOAT: {
+                printf(
+                    "%.*s = %f\n",
+                    (int)var.name.size,
+                    var.name.value,
+                    var.floating.value
+                );
+            } break;
+            default: {
+                printf("unimplemented printing for kind: %s\n", var_kind_name(var.kind));
+                return 1;
+            } break;
         }
     }
 
