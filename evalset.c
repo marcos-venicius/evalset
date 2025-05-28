@@ -4,7 +4,7 @@
 #include "./parser.h"
 #include "./io.h"
 
-void print_var(Var var) {
+void print_var(Var var, bool is_inside_array) {
     switch (var.kind) {
         case VK_ARRAY: {
             printf(
@@ -13,19 +13,29 @@ void print_var(Var var) {
                 var.name.value
             );
             for (size_t i = 0; i < var.array.length; ++i) {
-                print_var(var.array.data[i]);
+                print_var(var.array.data[i], true);
+
+                if (i < var.array.length - 1) printf(", ");
             }
             printf("]\n");
             break;
         };
         case VK_STRING: {
-            printf(
-                "%.*s = %.*s\n",
-                (int)var.name.size,
-                var.name.value,
-                (int)var.string.size,
-                var.string.value
-            );
+            if (is_inside_array) {
+                printf(
+                    "%.*s",
+                    (int)var.string.size,
+                    var.string.value
+                );
+            } else {
+                printf(
+                    "%.*s = %.*s\n",
+                    (int)var.name.size,
+                    var.name.value,
+                    (int)var.string.size,
+                    var.string.value
+                );
+            }
         } break;
         case VK_INTEGER: {
             printf(
@@ -85,7 +95,7 @@ int main(void) {
     for (size_t i = 0; i < parser.length; i++) {
         Var var = parser.data[i];
 
-        print_var(var);
+        print_var(var, false);
     }
 
     parser_free(parser);

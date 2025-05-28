@@ -16,6 +16,6 @@ name = "Eval set"
 version = 1993
 booleanTrue = true
 boolean_false = false
-empty_array = []
+empty_array = ["with strings", "hello world", "one more string inside my beautiful array"]
 nullable = nil
 # empty_array = [10] # in progress

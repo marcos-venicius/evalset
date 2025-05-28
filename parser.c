@@ -50,7 +50,7 @@ Token *expect_kind(Token **ref, Token_Kind kind) {
     return token;
 }
 
-void parse_string_variable(Parser *parser, Token *var_lhs, Token **tokens) {
+Var parse_string_variable(Token *var_lhs, Token **tokens) {
     Token *var_rhs = expect_kind(tokens, TK_STRING);
 
     Var var = {
@@ -65,10 +65,10 @@ void parse_string_variable(Parser *parser, Token *var_lhs, Token **tokens) {
         }
     };
 
-    array_append(parser, var);
+    return var;
 }
 
-void parse_integer_variable(Parser *parser, Token *var_lhs, Token **tokens) {
+Var parse_integer_variable(Token *var_lhs, Token **tokens) {
     Token *var_rhs = expect_kind(tokens, TK_INTEGER);
 
     char *const number = calloc(var_rhs->content_size, sizeof(char));
@@ -103,10 +103,10 @@ void parse_integer_variable(Parser *parser, Token *var_lhs, Token **tokens) {
         }
     };
 
-    array_append(parser, var);
+    return var;
 }
 
-void parse_float_variable(Parser *parser, Token *var_lhs, Token **tokens) {
+Var parse_float_variable(Token *var_lhs, Token **tokens) {
     Token *var_rhs = expect_kind(tokens, TK_FLOAT);
 
     char *const number = calloc(var_rhs->content_size, sizeof(char));
@@ -141,10 +141,10 @@ void parse_float_variable(Parser *parser, Token *var_lhs, Token **tokens) {
         }
     };
 
-    array_append(parser, var);
+    return var;
 }
 
-void parse_bool_variable(Parser *parser, Token *var_lhs, bool value, Token **tokens) {
+Var parse_bool_variable(Token *var_lhs, bool value, Token **tokens) {
     advance_token(tokens);
 
     Var var = {
@@ -158,10 +158,10 @@ void parse_bool_variable(Parser *parser, Token *var_lhs, bool value, Token **tok
         }
     };
 
-    array_append(parser, var);
+    return var;
 }
 
-void parse_nil_variable(Parser *parser, Token *var_lhs, Token **ref) {
+Var parse_nil_variable(Token *var_lhs, Token **ref) {
     advance_token(ref);
 
     Var var = {
@@ -172,36 +172,58 @@ void parse_nil_variable(Parser *parser, Token *var_lhs, Token **ref) {
         },
     };
 
-    array_append(parser, var);
+    return var;
 }
 
-void parse_array_variable(Parser *parser, Token *var_lhs, Token **ref) {
+Var parse_array_variable(Token *var_lhs, Token **ref) {
     advance_token(ref);
+
+    Var var = {
+        .kind = VK_ARRAY,
+        .name = {
+            .size = var_lhs->content_size,
+            .value = var_lhs->content
+        },
+        .array = {
+            .capacity = 0,
+            .length = 0,
+            .data = NULL
+        }
+    };
 
     Token *current = unwrap_ref(ref);
 
-    if (current->kind == TK_RSQUARE) {
-        advance_token(ref);
+    while (current->kind != TK_EOF && current->kind != TK_RSQUARE) {
+        if (current->kind == TK_NEWLINE) {
+            current = current->next;
+            continue;
+        }
 
-        Var var = {
-            .kind = VK_ARRAY,
-            .name = {
-                .size = var_lhs->content_size,
-                .value = var_lhs->content
-            },
-            .array = {
-                .capacity = 0,
-                .length = 0,
-                .data = NULL
+        switch (current->kind) {
+            case TK_STRING: array_append(&var.array, parse_string_variable(var_lhs, &current)); break;
+            default: {
+                fprintf(
+                    stderr,
+                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%s\033[0m\n",
+                    LOC_ERROR_ARG(current->loc),
+                    token_kind_value(current->kind)
+                );
+                exit(1);
             }
-        };
+        }
 
-        array_append(parser, var);
-
-        return;
+        if (current->kind == TK_COMMA) {
+            current = current->next;
+        }
     }
 
-    assert(0 && "unimplemented filled arrays parsing");
+    (void)expect_kind(&current, TK_RSQUARE);
+
+    advance_token(ref);
+
+    *ref = current;
+
+    return var;
 }
 
 Parser parse_tokens(Token *head) {
@@ -224,13 +246,13 @@ Parser parse_tokens(Token *head) {
             // TODO: decouple variable creation of expression parser
             //       so we can reuse the expression parser when parsing arrays and call it
             //       recursively
-            case TK_STRING: parse_string_variable(&parser, var_lhs, &current); break;
-            case TK_INTEGER: parse_integer_variable(&parser, var_lhs, &current); break;
-            case TK_FLOAT: parse_float_variable(&parser, var_lhs, &current); break;
-            case TK_TRUE: parse_bool_variable(&parser, var_lhs, true, &current); break;
-            case TK_FALSE: parse_bool_variable(&parser, var_lhs, false, &current); break;
-            case TK_NIL: parse_nil_variable(&parser, var_lhs, &current); break;
-            case TK_LSQUARE: parse_array_variable(&parser, var_lhs, &current); break;
+            case TK_STRING: array_append(&parser, parse_string_variable(var_lhs, &current)); break;
+            case TK_INTEGER: array_append(&parser, parse_integer_variable(var_lhs, &current)); break;
+            case TK_FLOAT: array_append(&parser, parse_float_variable(var_lhs, &current)); break;
+            case TK_TRUE: array_append(&parser, parse_bool_variable(var_lhs, true, &current)); break;
+            case TK_FALSE: array_append(&parser, parse_bool_variable(var_lhs, false, &current)); break;
+            case TK_NIL: array_append(&parser, parse_nil_variable(var_lhs, &current)); break;
+            case TK_LSQUARE: array_append(&parser, parse_array_variable(var_lhs, &current)); break;
 
             default: {
                 fprintf(
