@@ -62,12 +62,16 @@ void print_var(Var var, bool is_inside_array) {
             }
         } break;
         case VK_BOOLEAN: {
-            printf(
-                "%.*s = %s\n",
-                (int)var.name.size,
-                var.name.value,
-                var.boolean.value == 1 ? "true" : "false"
-            );
+            if (is_inside_array) {
+                printf("%s", var.boolean.value == 1 ? "true" : "false");
+            } else {
+                printf(
+                    "%.*s = %s\n",
+                    (int)var.name.size,
+                    var.name.value,
+                    var.boolean.value == 1 ? "true" : "false"
+                );
+            }
         } break;
         case VK_NIL: {
             printf(
