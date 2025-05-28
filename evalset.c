@@ -74,11 +74,15 @@ void print_var(Var var, bool is_inside_array) {
             }
         } break;
         case VK_NIL: {
-            printf(
-                "%.*s = nil\n",
-                (int)var.name.size,
-                var.name.value
-            );
+            if (is_inside_array) {
+                printf("nil");
+            } else {
+                printf(
+                    "%.*s = nil\n",
+                    (int)var.name.size,
+                    var.name.value
+                );
+            }
         } break;
         default: {
             printf("unimplemented printing for kind: %s\n", var_kind_name(var.kind));
