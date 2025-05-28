@@ -51,6 +51,8 @@ void print_tokens(Token *head) {
 // So, if we change the "rendering style" we don't have to modify in many places but only here.
 const char *token_kind_value(Token_Kind kind) {
     switch (kind) {
+        case TK_COMMA:
+            return ",";
         case TK_EOF:
             return "<eof>";
         case TK_SYM:

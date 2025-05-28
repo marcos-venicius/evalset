@@ -206,6 +206,7 @@ Var parse_array_variable(Token *var_lhs, Token **ref) {
             case TK_TRUE: array_append(&var.array, parse_bool_variable(var_lhs, true, &current)); break;
             case TK_FALSE: array_append(&var.array, parse_bool_variable(var_lhs, false, &current)); break;
             case TK_NIL: array_append(&var.array, parse_nil_variable(var_lhs, &current)); break;
+            case TK_LSQUARE: array_append(&var.array, parse_array_variable(var_lhs, &current)); break;
             default: {
                 fprintf(
                     stderr,

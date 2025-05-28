@@ -22,6 +22,12 @@ integer_array = [1, 2, 3, 1, 3, 5, 8, 13]
 float_array = [1.2, 2.4, 3.135, 1.2356, 3.3463, 5.22, 8.66, 13.208]
 boolean_array = [true, false, false, true]
 nil_array = [nil, nil, nil]
-nested_array = [true, 1, 3.1514, "this is funny"]
+nested_types_array = [true, 1, 3.1514, "this is funny"]
+nested_arrays_array = [true, ["Hello, World", false], 10]
+matrix = [
+    ["O", "O", " "],
+    [" ", " ", "X"],
+    [" ", "X", " "],
+]
 nullable = nil
 # empty_array = [10] # in progress

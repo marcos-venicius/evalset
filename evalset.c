@@ -7,17 +7,25 @@
 void print_var(Var var, bool is_inside_array) {
     switch (var.kind) {
         case VK_ARRAY: {
-            printf(
-                "%.*s = [",
-                (int)var.name.size,
-                var.name.value
-            );
+            if (is_inside_array) {
+                printf("[");
+            } else {
+                printf(
+                    "%.*s = [",
+                    (int)var.name.size,
+                    var.name.value
+                );
+            }
             for (size_t i = 0; i < var.array.length; ++i) {
                 print_var(var.array.data[i], true);
 
                 if (i < var.array.length - 1) printf(", ");
             }
-            printf("]\n");
+            if (is_inside_array) {
+                printf("]");
+            } else {
+                printf("]\n");
+            }
             break;
         };
         case VK_STRING: {
