@@ -19,5 +19,6 @@ boolean_false = false
 empty_array = []
 string_array = ["with strings", "hello world", "one more string inside my beautiful array"]
 integer_array = [1, 2, 3, 1, 3, 5, 8, 13]
+float_array = [1.2, 2.4, 3.135, 1.2356, 3.3463, 5.22, 8.66, 13.208]
 nullable = nil
 # empty_array = [10] # in progress

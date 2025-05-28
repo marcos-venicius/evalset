@@ -50,12 +50,16 @@ void print_var(Var var, bool is_inside_array) {
             }
         } break;
         case VK_FLOAT: {
-            printf(
-                "%.*s = %f\n",
-                (int)var.name.size,
-                var.name.value,
-                var.floating.value
-            );
+            if (is_inside_array) {
+                printf("%f", var.floating.value);
+            } else {
+                printf(
+                    "%.*s = %f\n",
+                    (int)var.name.size,
+                    var.name.value,
+                    var.floating.value
+                );
+            }
         } break;
         case VK_BOOLEAN: {
             printf(

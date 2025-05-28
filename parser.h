@@ -34,6 +34,7 @@ typedef struct {
 } Integer;
 
 typedef struct {
+    // TODO: add precision here (then update the display to the fixed precision)
     double value;
 } Float;
 
