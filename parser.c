@@ -201,6 +201,7 @@ Var parse_array_variable(Token *var_lhs, Token **ref) {
 
         switch (current->kind) {
             case TK_STRING: array_append(&var.array, parse_string_variable(var_lhs, &current)); break;
+            case TK_INTEGER: array_append(&var.array, parse_integer_variable(var_lhs, &current)); break;
             default: {
                 fprintf(
                     stderr,

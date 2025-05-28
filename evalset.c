@@ -38,12 +38,16 @@ void print_var(Var var, bool is_inside_array) {
             }
         } break;
         case VK_INTEGER: {
-            printf(
-                "%.*s = %ld\n",
-                (int)var.name.size,
-                var.name.value,
-                var.integer.value
-            );
+            if (is_inside_array) {
+                printf("%ld", var.integer.value);
+            } else {
+                printf(
+                    "%.*s = %ld\n",
+                    (int)var.name.size,
+                    var.name.value,
+                    var.integer.value
+                );
+            }
         } break;
         case VK_FLOAT: {
             printf(
