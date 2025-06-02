@@ -2,6 +2,8 @@
 
 The JSON sucessor?
 
+![immagine](https://github.com/user-attachments/assets/3e07d07a-cd22-4dfb-934e-30cf195d734b)
+
 ## The idea
 
 This is a simple example of the `evalset` syntax: 
