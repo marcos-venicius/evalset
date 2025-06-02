@@ -79,7 +79,7 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 > [!NOTE]
 > Probably it'll be lazy evaluated to avoid big files being slow to load, it should be optional to the user api.
 
-> [!INFO]
+> [!NOTE]
 > Comma inside arrays and objects are entirely optional
 
 ## Data types
