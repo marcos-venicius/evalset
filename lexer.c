@@ -25,6 +25,7 @@ static unsigned int errors = 0;
 static char chr(Lexer *lexer);
 
 void print_tokens(Token *head) {
+    return;
     Token *curr = head;
 
     while (curr != NULL) {
@@ -109,55 +110,55 @@ const char *token_kind_value(Token_Kind kind) {
 const char *token_kind_name(Token_Kind kind) {
     switch (kind) {
         case TK_EOF:
-            return "EOF";
+            return "<eof>";
         case TK_SYM:
-            return "SYM";
+            return "<symbol>";
         case TK_TRUE:
-            return "TRUE";
+            return "<true>";
         case TK_FALSE:
-            return "FALSE";
+            return "<false>";
         case TK_NIL:
-            return "NIL";
+            return "<nil>";
         case TK_EQUAL:
-            return "EQUAL";
+            return "<equal>";
         case TK_SLASH:
-            return "SLASH";
+            return "<slash>";
         case TK_MOD:
-            return "MOD";
+            return "<mod>";
         case TK_MINUS:
-            return "MINUS";
+            return "<minus>";
         case TK_LBRACE:
-            return "LBRACE";
+            return "<lbrace>";
         case TK_RBRACE:
-            return "RBRACE";
+            return "<rbrace>";
         case TK_LPAREN:
-            return "LPAREN";
+            return "<lparen>";
         case TK_RPAREN:
-            return "RPAREN";
+            return "<rparen>";
         case TK_LSQUARE:
-            return "LSQUARE";
+            return "<lsquare>";
         case TK_RSQUARE:
-            return "RSQUARE";
+            return "<rsquare>";
         case TK_NEWLINE:
-            return "NEWLINE";
+            return "<newline>";
         case TK_COMMENT:
-            return "COMMENT";
+            return "<comment>";
         case TK_STRING:
-            return "STRING";
+            return "<string>";
         case TK_INTEGER:
-            return "INTEGER";
+            return "<integer>";
         case TK_FLOAT:
-            return "FLOAT";
+            return "<float>";
         case TK_PATH_ROOT:
-            return "TK_PATH_ROOT";
+            return "<tk_path_root>";
         case TK_PATH_CHUNK:
-            return "TK_PATH_CHUNK";
+            return "<tk_path_chunk>";
         case TK_STAR:
-            return "TK_STAR";
+            return "<tk_star>";
         case TK_PLUS:
-            return "TK_PLUS";
+            return "<tk_plus>";
         case TK_COMMA:
-            return "TK_COMMA";
+            return "<tk_comma>";
         default:
             assert(0 && "invalid token kind");
     }

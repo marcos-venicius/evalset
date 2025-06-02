@@ -29,5 +29,9 @@ matrix = [
     [" ", " ", "X"],
     [" ", "X", " "],
 ]
+array_without_comma = [
+  [10 20 30 40] ["hello" "world"]
+  [        "hello youtube"      ]
+]
 nullable = nil
 # empty_array = [10] # in progress

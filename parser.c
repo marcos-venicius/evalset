@@ -50,6 +50,55 @@ Token *expect_kind(Token **ref, Token_Kind kind) {
     return token;
 }
 
+Token *expect_two_kinds(Token **ref, Token_Kind a, Token_Kind b) {
+    const char *expected_kind_a = token_kind_name(a);
+    const char *expected_kind_b = token_kind_name(b);
+    const char *received_kind = token_kind_value((*ref)->kind);
+    const char *received_name = token_kind_name((*ref)->kind);
+
+    if (ref == NULL || *ref == NULL) {
+        fprintf(
+            stderr,
+            "\033[1;31merror:\033[0m something went wrong. Expected a \033[1;35m%s\033[0m or \033[1;35m%s\033[0m but received \033[1;31mnull\033[0m which is \033[1;31m%s\033[0m.\n",
+            expected_kind_a,
+            expected_kind_b,
+            received_name
+        );
+        exit(1);
+    } else if ((*ref)->kind != a && (*ref)->kind != b) {
+        if ((*ref)->kind == TK_EOF) {
+            fprintf(
+                stderr,
+                LOC_ERROR_FMT" Invalid syntax. Expected a \033[1;35m%s\033[0m or \033[1;35m%s\033[0m but received \033[1;31m%s\033[0m which is \033[1;31m%s\033[0m.\n",
+                LOC_ERROR_ARG((*ref)->loc),
+                expected_kind_a,
+                expected_kind_b,
+                received_kind,
+                received_name
+            );
+        } else {
+            fprintf(
+                stderr,
+                LOC_ERROR_FMT" Invalid syntax. Expected a \033[1;35m%s\033[0m or \033[1;35m%s\033[0m but received \033[1;31m%.*s\033[0m which is \033[1;35m%s\033[0m.\n",
+                LOC_ERROR_ARG((*ref)->loc),
+                expected_kind_a,
+                expected_kind_b,
+                (int)(*ref)->content_size,
+                (*ref)->content,
+                received_name
+            );
+        }
+
+        exit(1);
+    }
+
+    Token *token = *ref;
+
+    (*ref) = token->next;
+
+    return token;
+}
+
 Var parse_string_variable(Token *var_lhs, Token **tokens) {
     Token *var_rhs = expect_kind(tokens, TK_STRING);
 
@@ -245,13 +294,10 @@ Parser parse_tokens(Token *head) {
             continue;
         }
 
-        Token *var_lhs = expect_kind(&current, TK_SYM);
+        Token *var_lhs = expect_two_kinds(&current, TK_SYM, TK_STRING);
         (void)expect_kind(&current, TK_EQUAL);
 
         switch (current->kind) {
-            // TODO: decouple variable creation of expression parser
-            //       so we can reuse the expression parser when parsing arrays and call it
-            //       recursively
             case TK_STRING: array_append(&parser, parse_string_variable(var_lhs, &current)); break;
             case TK_INTEGER: array_append(&parser, parse_integer_variable(var_lhs, &current)); break;
             case TK_FLOAT: array_append(&parser, parse_float_variable(var_lhs, &current)); break;
