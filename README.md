@@ -6,7 +6,7 @@ The JSON sucessor?
 
 This is a simple example of the `evalset` syntax: 
 
-```toml
+```console
 root = {
     # this is the base url for the app
     base_url = "http://localhost:3030"
@@ -33,7 +33,6 @@ routes = [
     }
 ]
 
-```toml
 # Commas are entirely optional
 dependencies = {
   test = "hello"
@@ -79,6 +78,9 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 
 > [!NOTE]
 > Probably it'll be lazy evaluated to avoid big files being slow to load, it should be optional to the user api.
+
+> [!INFO]
+> Comma inside arrays and objects are entirely optional
 
 ## Data types
 
