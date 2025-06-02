@@ -281,6 +281,63 @@ Var parse_array_variable(Token *var_lhs, Token **ref) {
     return var;
 }
 
+Var parse_object_variable(Token *var_lhs, Token **ref) {
+    advance_token(ref);
+
+    Var var = {
+        .kind = VK_OBJECT,
+        .name = {
+            .size = var_lhs->content_size,
+            .value = var_lhs->content
+        },
+        .object = {
+            .capacity = 0,
+            .length = 0,
+            .data = NULL
+        }
+    };
+
+    Token *current = unwrap_ref(ref);
+
+    while (current->kind != TK_EOF && current->kind != TK_RBRACE) {
+        if (current->kind == TK_NEWLINE) {
+            current = current->next;
+            continue;
+        }
+
+        switch (current->kind) {
+            /* case TK_STRING: array_append(&var.object, parse_string_variable(var_lhs, &current)); break;
+            case TK_INTEGER: array_append(&var.object, parse_integer_variable(var_lhs, &current)); break;
+            case TK_FLOAT: array_append(&var.object, parse_float_variable(var_lhs, &current)); break;
+            case TK_TRUE: array_append(&var.object, parse_bool_variable(var_lhs, true, &current)); break;
+            case TK_FALSE: array_append(&var.object, parse_bool_variable(var_lhs, false, &current)); break;
+            case TK_NIL: array_append(&var.object, parse_nil_variable(var_lhs, &current)); break;
+            case TK_LSQUARE: array_append(&var.object, parse_array_variable(var_lhs, &current)); break; */
+            default: {
+                fprintf(
+                    stderr,
+                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%s\033[0m\n",
+                    LOC_ERROR_ARG(current->loc),
+                    token_kind_value(current->kind)
+                );
+                exit(1);
+            }
+        }
+
+        /* if (current->kind == TK_COMMA) {
+            current = current->next;
+        } */
+    }
+
+    (void)expect_kind(&current, TK_RBRACE);
+
+    advance_token(ref);
+
+    *ref = current;
+
+    return var;
+}
+
 Parser parse_tokens(Token *head) {
     if (head == NULL) return (Parser){0};
 
@@ -305,6 +362,7 @@ Parser parse_tokens(Token *head) {
             case TK_FALSE: array_append(&parser, parse_bool_variable(var_lhs, false, &current)); break;
             case TK_NIL: array_append(&parser, parse_nil_variable(var_lhs, &current)); break;
             case TK_LSQUARE: array_append(&parser, parse_array_variable(var_lhs, &current)); break;
+            case TK_LBRACE: array_append(&parser, parse_object_variable(var_lhs, &current)); break;
 
             default: {
                 fprintf(

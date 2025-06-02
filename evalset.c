@@ -4,10 +4,10 @@
 #include "./parser.h"
 #include "./io.h"
 
-void print_var(Var var, bool is_inside_array) {
+void print_var(Var var, bool is_inside) {
     switch (var.kind) {
         case VK_ARRAY: {
-            if (is_inside_array) {
+            if (is_inside) {
                 printf("[");
             } else {
                 printf(
@@ -21,15 +21,37 @@ void print_var(Var var, bool is_inside_array) {
 
                 if (i < var.array.length - 1) printf(", ");
             }
-            if (is_inside_array) {
+            if (is_inside) {
                 printf("]");
             } else {
                 printf("]\n");
             }
             break;
         };
+        case VK_OBJECT: {
+            if (is_inside) {
+                printf("{");
+            } else {
+                printf(
+                    "%.*s = {",
+                    (int)var.name.size,
+                    var.name.value
+                );
+            }
+            /* for (size_t i = 0; i < var.array.length; ++i) {
+                print_var(var.array.data[i], true);
+
+                if (i < var.array.length - 1) printf(", ");
+            } */
+            if (is_inside) {
+                printf("}");
+            } else {
+                printf("}\n");
+            }
+            break;
+        };
         case VK_STRING: {
-            if (is_inside_array) {
+            if (is_inside) {
                 printf(
                     "%.*s",
                     (int)var.string.size,
@@ -46,7 +68,7 @@ void print_var(Var var, bool is_inside_array) {
             }
         } break;
         case VK_INTEGER: {
-            if (is_inside_array) {
+            if (is_inside) {
                 printf("%ld", var.integer.value);
             } else {
                 printf(
@@ -58,7 +80,7 @@ void print_var(Var var, bool is_inside_array) {
             }
         } break;
         case VK_FLOAT: {
-            if (is_inside_array) {
+            if (is_inside) {
                 printf("%f", var.floating.value);
             } else {
                 printf(
@@ -70,7 +92,7 @@ void print_var(Var var, bool is_inside_array) {
             }
         } break;
         case VK_BOOLEAN: {
-            if (is_inside_array) {
+            if (is_inside) {
                 printf("%s", var.boolean.value == 1 ? "true" : "false");
             } else {
                 printf(
@@ -82,7 +104,7 @@ void print_var(Var var, bool is_inside_array) {
             }
         } break;
         case VK_NIL: {
-            if (is_inside_array) {
+            if (is_inside) {
                 printf("nil");
             } else {
                 printf(
