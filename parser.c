@@ -6,6 +6,8 @@
 #include "./loc.h"
 #include "./lexer.h"
 
+Var parse_object_variable(Token *var_lhs, Token **ref);
+
 void advance_token(Token **ref) {
     if (ref != NULL && *ref != NULL) *ref = (*ref)->next;
 }
@@ -256,6 +258,7 @@ Var parse_array_variable(Token *var_lhs, Token **ref) {
             case TK_FALSE: array_append(&var.array, parse_bool_variable(var_lhs, false, &current)); break;
             case TK_NIL: array_append(&var.array, parse_nil_variable(var_lhs, &current)); break;
             case TK_LSQUARE: array_append(&var.array, parse_array_variable(var_lhs, &current)); break;
+            case TK_LBRACE: array_append(&var.array, parse_object_variable(var_lhs, &current)); break;
             default: {
                 fprintf(
                     stderr,
@@ -305,14 +308,18 @@ Var parse_object_variable(Token *var_lhs, Token **ref) {
             continue;
         }
 
+        Token *key_lhs = expect_two_kinds(&current, TK_SYM, TK_STRING);
+        (void)expect_kind(&current, TK_EQUAL);
+
         switch (current->kind) {
-            /* case TK_STRING: array_append(&var.object, parse_string_variable(var_lhs, &current)); break;
-            case TK_INTEGER: array_append(&var.object, parse_integer_variable(var_lhs, &current)); break;
-            case TK_FLOAT: array_append(&var.object, parse_float_variable(var_lhs, &current)); break;
-            case TK_TRUE: array_append(&var.object, parse_bool_variable(var_lhs, true, &current)); break;
-            case TK_FALSE: array_append(&var.object, parse_bool_variable(var_lhs, false, &current)); break;
-            case TK_NIL: array_append(&var.object, parse_nil_variable(var_lhs, &current)); break;
-            case TK_LSQUARE: array_append(&var.object, parse_array_variable(var_lhs, &current)); break; */
+            case TK_STRING: array_append(&var.object, parse_string_variable(key_lhs, &current)); break;
+            case TK_INTEGER: array_append(&var.object, parse_integer_variable(key_lhs, &current)); break;
+            case TK_FLOAT: array_append(&var.object, parse_float_variable(key_lhs, &current)); break;
+            case TK_TRUE: array_append(&var.object, parse_bool_variable(key_lhs, true, &current)); break;
+            case TK_FALSE: array_append(&var.object, parse_bool_variable(key_lhs, false, &current)); break;
+            case TK_NIL: array_append(&var.object, parse_nil_variable(key_lhs, &current)); break;
+            case TK_LSQUARE: array_append(&var.object, parse_array_variable(key_lhs, &current)); break;
+            case TK_LBRACE: array_append(&var.object, parse_object_variable(key_lhs, &current)); break;
             default: {
                 fprintf(
                     stderr,
@@ -324,9 +331,9 @@ Var parse_object_variable(Token *var_lhs, Token **ref) {
             }
         }
 
-        /* if (current->kind == TK_COMMA) {
+        if (current->kind == TK_COMMA) {
             current = current->next;
-        } */
+        }
     }
 
     (void)expect_kind(&current, TK_RBRACE);

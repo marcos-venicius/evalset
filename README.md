@@ -32,6 +32,39 @@ routes = [
         name = $/root/route_names/dashboard
     }
 ]
+
+```toml
+# Commas are entirely optional
+dependencies = {
+  test = "hello"
+  outro = "now"
+  number = 10
+  floats = 3.1415,
+  this_is_true = true,
+  this_is_false = false
+  this_is_nil = nil
+  array = [
+    "hello world"
+    [
+      10, 20
+    ]
+    {
+      "this is a valid key" = "my very secret jwt token",
+      my_lucy_number = 10
+      child = {
+        intern_node = "Hello Guys"
+      }
+    }
+  ]
+}
+
+list = ["hello", 4239]
+```
+
+And, as you can see, evalset also suport "string named variables" with the following syntax:
+
+```toml
+"@angular/version" = "18.9.0"
 ```
 
 The idea behind the project is to learn more about C, compilers, interpreters, etc.
