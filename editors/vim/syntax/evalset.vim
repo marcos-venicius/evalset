@@ -4,14 +4,14 @@ endif
 
 let b:current_syntax = "evalset"
 
-syntax keyword aocKeyword true false nil
-highlight link aocKeyword Keyword
+syntax keyword evalsetKeyword true false nil
+highlight link evalsetKeyword Keyword
 
-syntax match aocComment "#.*$"
-highlight link aocComment Comment
+syntax match evalsetComment "#.*$"
+highlight link evalsetComment Comment
 
-syntax match aocString /".*"/
-highlight link aocString String
+syntax match evalsetString /".*"/
+highlight link evalsetString String
 
 syntax match esInteger "\-\?\<\d\+\>" display
 syntax match esFloat "\-\?\<[0-9][0-9_]*\%(\.[0-9][0-9_]*\)\%([eE][+-]\=[0-9_]\+\)\=" display
