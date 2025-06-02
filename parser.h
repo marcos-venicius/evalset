@@ -40,6 +40,9 @@ typedef struct {
 
 // TODO: it'll be a hashmap (own implemenation)
 typedef struct {
+    size_t capacity;
+    size_t length;
+    Var *data;
 } Object;
 
 typedef struct {

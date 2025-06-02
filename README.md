@@ -6,7 +6,7 @@ The JSON sucessor?
 
 This is a simple example of the `evalset` syntax: 
 
-```toml
+```console
 root = {
     # this is the base url for the app
     base_url = "http://localhost:3030"
@@ -32,6 +32,38 @@ routes = [
         name = $/root/route_names/dashboard
     }
 ]
+
+# Commas are entirely optional
+dependencies = {
+  test = "hello"
+  outro = "now"
+  number = 10
+  floats = 3.1415,
+  this_is_true = true,
+  this_is_false = false
+  this_is_nil = nil
+  array = [
+    "hello world"
+    [
+      10, 20
+    ]
+    {
+      "this is a valid key" = "my very secret jwt token",
+      my_lucy_number = 10
+      child = {
+        intern_node = "Hello Guys"
+      }
+    }
+  ]
+}
+
+list = ["hello", 4239]
+```
+
+And, as you can see, evalset also suport "string named variables" with the following syntax:
+
+```toml
+"@angular/version" = "18.9.0"
 ```
 
 The idea behind the project is to learn more about C, compilers, interpreters, etc.
@@ -46,6 +78,9 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 
 > [!NOTE]
 > Probably it'll be lazy evaluated to avoid big files being slow to load, it should be optional to the user api.
+
+> [!NOTE]
+> Comma inside arrays and objects are entirely optional
 
 ## Data types
 
