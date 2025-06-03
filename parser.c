@@ -226,6 +226,52 @@ Var parse_nil_variable(Token *var_lhs, Token **ref) {
     return var;
 }
 
+Var parse_path_variable(Token *var_lhs, Token **ref) {
+    advance_token(ref);
+
+    Var var = {
+        .kind = VK_PATH,
+        .name = {
+            .size = var_lhs->content_size,
+            .value = var_lhs->content
+        },
+        .path = {
+            .capacity = 0,
+            .length = 0,
+            .data = NULL
+        }
+    };
+
+    Token *current = unwrap_ref(ref);
+
+    int chunks = 0;
+
+    while (current->kind == TK_PATH_CHUNK) {
+        chunks++;
+
+        char *chunk = malloc(current->content_size);
+
+        memcpy(chunk, current->content, current->content_size);
+
+        array_append(&var.path, chunk);
+
+        current = current->next;
+    }
+
+    if (chunks == 0) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" Invalid syntax. Invalid path\n",
+            LOC_ERROR_ARG(current->loc)
+        );
+        exit(1);
+    }
+
+    *ref = current;
+
+    return var; 
+}
+
 Var parse_array_variable(Token *var_lhs, Token **ref) {
     advance_token(ref);
 
@@ -259,12 +305,15 @@ Var parse_array_variable(Token *var_lhs, Token **ref) {
             case TK_NIL: array_append(&var.array, parse_nil_variable(var_lhs, &current)); break;
             case TK_LSQUARE: array_append(&var.array, parse_array_variable(var_lhs, &current)); break;
             case TK_LBRACE: array_append(&var.array, parse_object_variable(var_lhs, &current)); break;
+            case TK_PATH_ROOT: array_append(&var.array, parse_path_variable(var_lhs, &current)); break;
             default: {
                 fprintf(
                     stderr,
-                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%s\033[0m\n",
+                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%.*s\033[0m which is \033[1;35m%s\033[0m\n",
                     LOC_ERROR_ARG(current->loc),
-                    token_kind_value(current->kind)
+                    (int)current->content_size,
+                    current->content,
+                    token_kind_name(current->kind)
                 );
                 exit(1);
             }
@@ -320,12 +369,15 @@ Var parse_object_variable(Token *var_lhs, Token **ref) {
             case TK_NIL: array_append(&var.object, parse_nil_variable(key_lhs, &current)); break;
             case TK_LSQUARE: array_append(&var.object, parse_array_variable(key_lhs, &current)); break;
             case TK_LBRACE: array_append(&var.object, parse_object_variable(key_lhs, &current)); break;
+            case TK_PATH_ROOT: array_append(&var.object, parse_path_variable(key_lhs, &current)); break;
             default: {
                 fprintf(
                     stderr,
-                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%s\033[0m\n",
+                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%.*s\033[0m which is \033[1;35m%s\033[0m\n",
                     LOC_ERROR_ARG(current->loc),
-                    token_kind_value(current->kind)
+                    (int)current->content_size,
+                    current->content,
+                    token_kind_name(current->kind)
                 );
                 exit(1);
             }
@@ -370,13 +422,16 @@ Parser parse_tokens(Token *head) {
             case TK_NIL: array_append(&parser, parse_nil_variable(var_lhs, &current)); break;
             case TK_LSQUARE: array_append(&parser, parse_array_variable(var_lhs, &current)); break;
             case TK_LBRACE: array_append(&parser, parse_object_variable(var_lhs, &current)); break;
+            case TK_PATH_ROOT: array_append(&parser, parse_path_variable(var_lhs, &current)); break;
 
             default: {
                 fprintf(
                     stderr,
-                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%s\033[0m\n",
+                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%.*s\033[0m which is \033[1;35m%s\033[0m\n",
                     LOC_ERROR_ARG(current->loc),
-                    token_kind_value(current->kind)
+                    (int)current->content_size,
+                    current->content,
+                    token_kind_name(current->kind)
                 );
                 exit(1);
             }
@@ -387,6 +442,7 @@ Parser parse_tokens(Token *head) {
 }
 
 void parser_free(Parser parser) {
+    // TODO: implement a better parser free
     array_free(&parser);
 }
 
@@ -399,6 +455,7 @@ const char *var_kind_name(Var_Kind var_kind) {
         case VK_BOOLEAN: return "BOOLEAN";
         case VK_OBJECT: return "OBJECT";
         case VK_ARRAY: return "ARRAY";
+        case VK_PATH: return "PATH";
         default: return "UNKNOWN";
     }
 }

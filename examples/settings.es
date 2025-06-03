@@ -1,24 +1,42 @@
-dependencies = {
-  "@angular/react/native" = "^10.0.0"
+permissions = {
+    default = ["user:read" "user:write"]
+    admin = ["user:read" "user:write" "repository:read" "repository:write"]
 }
 
-root = [
-  {
-    # this is the base url for the app
-    base_url = "http://localhost:3030"
-    app_name = "testing some stuff" # this is the name of my app
-    id = 129
-    other = 129.19
+default_permissions = $/permissions/default
+admin_permissions = $/permissions/admin
 
-    route_names = {
-      home = "Home"
-      dashboard = "Dashboard"
-      sub_routes = [
-        {
-          name = "user"
-          permissions = ["one" "two" "three"]
-        }
-      ]
+pages = [
+    {
+        route = "/user"
+        permissions = [
+            $/permissions/default
+            $/permissions/admin
+        ]
     }
-  }
+    {
+        route = "/user/repos"
+        permissions = $/permissions/admin
+    }
+    {
+        route = "/user/repos"
+        permissions = $/permissions/admin
+    }
+    {
+        route = "/user/repos"
+        permissions = $/admin_permissions
+    }
+    {
+        route = "/user"
+        permissions = $/permissions/default
+    }
+    {
+        route = "/user"
+        permissions = $/permissions/default
+    }
+    {
+        route = "/user"
+        permissions = $/permissions/default
+    }
 ]
+

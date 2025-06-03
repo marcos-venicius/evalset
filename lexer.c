@@ -25,7 +25,6 @@ static unsigned int errors = 0;
 static char chr(Lexer *lexer);
 
 void print_tokens(Token *head) {
-    return;
     Token *curr = head;
 
     while (curr != NULL) {

@@ -17,6 +17,7 @@ typedef enum {
 
     VK_ARRAY,
     VK_OBJECT,
+    VK_PATH,
 } Var_Kind;
 
 typedef struct {
@@ -51,6 +52,12 @@ typedef struct {
     Var *data;
 } Array;
 
+typedef struct {
+    size_t capacity;
+    size_t length;
+    char **data;
+} Path;
+
 struct Var {
     Var_Kind kind;
     String name;
@@ -62,6 +69,7 @@ struct Var {
         Float floating;
         Object object;
         Array array;
+        Path path;
     };
 };
 

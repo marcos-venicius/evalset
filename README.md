@@ -24,13 +24,13 @@ root = {
 
 routes = [
     {
-        id = $/root/id * 2
-        path = $/root/base_url + "/"
+        id = mul($/root/id, 2)
+        path = concat($/root/base_url, "/")
         name = $/root/route_names/home
     }
     {
-        id = $/root/id * 3
-        path = $/root/base_url + "/dashboard"
+        id = mul($/root/id, 3)
+        path = concat($/root/base_url, "/dashboard")
         name = $/root/route_names/dashboard
     }
 ]
@@ -93,6 +93,7 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 - Boolean (true | false)
 - Array
 - Object
+- Paths ($/[a-zA-Z_])
 
 ## The name
 

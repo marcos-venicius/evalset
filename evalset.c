@@ -130,6 +130,26 @@ void print_var(Var var, bool is_inside_array, int level) {
                 );
             }
         } break;
+        case VK_PATH: {
+            if (is_inside_array) {
+                printf("%*.s$", level, "");
+
+                for (size_t i = 0; i < var.path.length; ++i) {
+                    printf("%s", (char*)var.path.data[i]); // TODO: why the print works fine even without null char
+                }
+            } else {
+                printf(
+                    "%*.s%.*s = $",
+                    level,
+                    "",
+                    (int)var.name.size,
+                    var.name.value
+                );
+                for (size_t i = 0; i < var.path.length; ++i) {
+                    printf("%s", (char*)var.path.data[i]); // TODO: why the print works fine even without null char
+                }
+            }
+        } break;
         default: {
             printf("unimplemented printing for kind: %s\n", var_kind_name(var.kind));
             exit(1);
