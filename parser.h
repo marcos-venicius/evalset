@@ -60,20 +60,33 @@ typedef struct {
 } Path;
 
 typedef struct {
+    Var_Kind kind; // TODO: Should I use a different type?
+
+    union {
+        Integer integer;
+    };
+} Argument;
+
+typedef struct {
     String name;
 
     struct {
         size_t length, capacity;
 
-        struct {
-            Var_Kind kind; // TODO: Should I use a different type?
-
-            union {
-                Integer string;
-            };
-        } *data;
+        Argument *data;
     } arguments;
 } Fun_Call;
+
+typedef union {
+    String string;
+    Boolean boolean;
+    Integer integer;
+    Float floating;
+    Object object;
+    Array array;
+    Path path;
+    Fun_Call fun_call;
+} Data_Type;
 
 struct Var {
     Var_Kind kind;
@@ -87,7 +100,7 @@ struct Var {
         Object object;
         Array array;
         Path path;
-        Fun_Call func_call;
+        Fun_Call fun_call;
     };
 };
 

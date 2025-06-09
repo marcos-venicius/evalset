@@ -1,13 +1,29 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "./lexer.h"
 #include "./parser.h"
 #include "./io.h"
 
+static void print_argument(Argument argument) {
+    switch (argument.kind) {
+        case VK_INTEGER: {
+            printf("%ld", argument.integer.value);
+        } break;
+        default: assert(0 && "fix print_argument");
+    }
+}
+
 void print_var(Var var, bool is_inside_array, int level) {
     switch (var.kind) {
         case VK_FUN_CALL: {
-            printf("%.*s = %.*s()", (int)var.name.size, var.name.value, (int)var.func_call.name.size, var.func_call.name.value);
+            printf("%.*s = %.*s(", (int)var.name.size, var.name.value, (int)var.fun_call.name.size, var.fun_call.name.value);
+            for (size_t i = 0; i < var.fun_call.arguments.length; ++i) {
+                if (i > 0) printf(", ");
+
+                print_argument(var.fun_call.arguments.data[i]);
+            }
+            printf(")");
         } break;
         case VK_ARRAY: {
             if (is_inside_array) {

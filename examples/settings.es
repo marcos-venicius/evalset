@@ -1,8 +1,8 @@
 id = iota() # Some kind of sequential id generator like in golang
-#adding = sqrt(20)
-#multiplying = mul(10, 50)
-#subtracting = sub(100, 30)
-#adding = add(20, 40, 10, 60)
+adding = sqrt(20)
+multiplying = mul(10, 50)
+subtracting = sub(100, 30)
+adding = add(20, 40, 10, 60)
 
 #permissions = {
 #    default = ["user:read" "user:write"]
