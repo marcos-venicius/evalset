@@ -397,6 +397,39 @@ Var parse_object_variable(Token *var_lhs, Token **ref) {
     return var;
 }
 
+Var parse_fun_call_variable(Token *var_lhs, Token **ref) {
+    Token *current = *ref;
+
+    advance_token(ref);
+
+    expect_kind(ref, TK_LPAREN); // consume '('
+
+    Var var = {
+        .kind = VK_FUN_CALL,
+        .name = {
+            .size = var_lhs->content_size,
+            .value = var_lhs->content
+        },
+        .func_call = {
+            .name = {
+                .value = malloc(current->content_size * sizeof(char)),
+                .size = current->content_size
+            },
+            .arguments = {0}
+        }
+    };
+
+    memcpy(var.func_call.name.value, current->content, current->content_size);
+
+    if ((*ref)->kind != TK_RPAREN) {
+        // parse
+    }
+
+    expect_kind(ref, TK_RPAREN); // consume ')'
+    
+    return var;
+}
+
 Parser parse_tokens(Token *head) {
     if (head == NULL) return (Parser){0};
 
@@ -423,6 +456,7 @@ Parser parse_tokens(Token *head) {
             case TK_LSQUARE: array_append(&parser, parse_array_variable(var_lhs, &current)); break;
             case TK_LBRACE: array_append(&parser, parse_object_variable(var_lhs, &current)); break;
             case TK_PATH_ROOT: array_append(&parser, parse_path_variable(var_lhs, &current)); break;
+            case TK_SYM: array_append(&parser, parse_fun_call_variable(var_lhs, &current)); break;
 
             default: {
                 fprintf(

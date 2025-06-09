@@ -6,6 +6,9 @@
 
 void print_var(Var var, bool is_inside_array, int level) {
     switch (var.kind) {
+        case VK_FUN_CALL: {
+            printf("%.*s = %.*s()", (int)var.name.size, var.name.value, (int)var.func_call.name.size, var.func_call.name.value);
+        } break;
         case VK_ARRAY: {
             if (is_inside_array) {
                 printf("%*.s[\n", level, "");

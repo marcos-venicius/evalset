@@ -18,6 +18,7 @@ typedef enum {
     VK_ARRAY,
     VK_OBJECT,
     VK_PATH,
+    VK_FUN_CALL,
 } Var_Kind;
 
 typedef struct {
@@ -58,6 +59,22 @@ typedef struct {
     char **data;
 } Path;
 
+typedef struct {
+    String name;
+
+    struct {
+        size_t length, capacity;
+
+        struct {
+            Var_Kind kind; // TODO: Should I use a different type?
+
+            union {
+                Integer string;
+            };
+        } *data;
+    } arguments;
+} Fun_Call;
+
 struct Var {
     Var_Kind kind;
     String name;
@@ -70,6 +87,7 @@ struct Var {
         Object object;
         Array array;
         Path path;
+        Fun_Call func_call;
     };
 };
 
