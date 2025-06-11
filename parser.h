@@ -7,19 +7,35 @@
 #define DEFAULT_ARRAY_CAPACITY 100
 
 typedef struct Var Var;
+typedef struct Fun_Call Fun_Call;
+typedef struct Argument Argument;
 
 typedef enum {
-    VK_STRING = 0,
+    VK_NIL = 0,
+    VK_STRING,
     VK_INTEGER,
     VK_FLOAT,
-    VK_NIL,
     VK_BOOLEAN,
 
     VK_ARRAY,
     VK_OBJECT,
     VK_PATH,
     VK_FUN_CALL,
+    VK_SUM // HAVE TO BE THE LAST
 } Var_Kind;
+
+typedef enum {
+    AK_NIL = VK_SUM,
+    AK_INTEGER,
+    AK_STRING,
+    AK_FLOAT,
+    AK_BOOLEAN,
+    AK_PATH,
+    AK_OBJECT,
+    AK_ARRAY,
+    AK_FUN_CALL,
+    AK_SUM // HAVE TO BE THE LAST
+} Argument_Kind;
 
 typedef struct {
     // sized string
@@ -50,24 +66,35 @@ typedef struct {
 typedef struct {
     size_t capacity;
     size_t length;
-    Var *data;
+    Argument *data;
 } Array;
 
 typedef struct {
     size_t capacity;
     size_t length;
-    char **data;
+    String *data;
 } Path;
 
-typedef struct {
-    Var_Kind kind; // TODO: Should I use a different type?
+typedef void* Nil;
 
-    union {
-        Integer integer;
-    };
-} Argument;
+typedef union {
+    Integer integer;
+    String string;
+    Float floating;
+    Boolean boolean;
+    Path path;
+    Object object;
+    Array array;
+    Fun_Call *fun_call;
+} Argument_Data_Types;
 
-typedef struct {
+struct Argument {
+    Argument_Kind kind;
+
+    Argument_Data_Types as;
+};
+
+struct Fun_Call {
     String name;
 
     struct {
@@ -75,7 +102,7 @@ typedef struct {
 
         Argument *data;
     } arguments;
-} Fun_Call;
+};
 
 typedef union {
     String string;
@@ -85,23 +112,15 @@ typedef union {
     Object object;
     Array array;
     Path path;
-    Fun_Call fun_call;
-} Data_Type;
+    Fun_Call *fun_call;
+    Nil nil;
+} Var_Data_Types;
 
 struct Var {
     Var_Kind kind;
     String name;
 
-    union {
-        String string;
-        Boolean boolean;
-        Integer integer;
-        Float floating;
-        Object object;
-        Array array;
-        Path path;
-        Fun_Call fun_call;
-    };
+    Var_Data_Types as;
 };
 
 typedef struct {
@@ -131,94 +150,5 @@ typedef struct {
 Parser parse_tokens(Token *head);
 void parser_free(Parser parser);
 const char *var_kind_name(Var_Kind var_kind);
-
-/*
-
-Parser {
-    data = [
-        {
-            name = "name"
-            kind = string,
-            string = {
-                char *value
-            }
-        },
-        {
-            name = "version"
-            kind = integer,
-            integer = {
-                int value
-            }
-        },
-        {
-            name = "float"
-            kind = float,
-            integer = {
-                double value
-            }
-        },
-        {
-            name = "booleanTrue"
-            kind = boolean,
-            integer = {
-                bool value
-            }
-        },
-        {
-            name = "booleanFalse"
-            kind = boolean,
-            integer = {
-                boolean value
-            }
-        },
-        {
-            name = "nullable"
-            kind = nil,
-            nil = { }
-        },
-        {
-            name = "dependencies"
-            kind = array,
-            array = [
-                {
-                    name = "0"
-                    kind = object,
-                    object = {
-                        name = {
-                            name = "name"
-                            kind = string,
-                            stirng = {
-                                char *value;
-                            }
-                        }
-                        version = {
-                            name = "version"
-                            kind = array,
-                            array = [
-                                {
-                                    name = "0"
-                                    kind = integer,
-                                    integer = {
-                                        int value;
-                                    }
-                                },
-                                {
-                                    name = "1"
-                                    kind = integer,
-                                    integer = {
-                                        int value;
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            ]
-        }
-    ]
-}
-
-
-*/
 
 #endif // PARSER_H_

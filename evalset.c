@@ -5,10 +5,55 @@
 #include "./parser.h"
 #include "./io.h"
 
-static void print_argument(Argument argument) {
+void print_var(Var var, bool is_inside_array, int level);
+
+static void print_argument(Argument argument, int level) {
     switch (argument.kind) {
-        case VK_INTEGER: {
-            printf("%ld", argument.integer.value);
+        case AK_NIL: {
+            printf("%*.snil", level, "");
+        } break;
+        case AK_INTEGER: {
+            printf("%*.s%ld", level, "", argument.as.integer.value);
+        } break;
+        case AK_STRING: {
+            printf("%*.s%.*s", level, "", (int)argument.as.string.size, argument.as.string.value);
+        } break;
+        case AK_ARRAY: {
+            printf("%*.s[", level, "");
+            if (argument.as.array.length > 0) printf("\n");
+            for (size_t i = 0; i < argument.as.array.length; ++i) {
+                print_argument(argument.as.array.data[i], level + 2);
+
+                if (i < argument.as.array.length - 1) printf(",\n");
+            }
+            if (argument.as.array.length > 0) printf("\n%*.s", level, "");
+            printf("]");
+        } break;
+        case AK_BOOLEAN: {
+            printf("%*.s%s", level, "", argument.as.boolean.value == 1 ? "true" : "false");
+        } break;
+        case AK_FLOAT: {
+            printf("%*.s%f", level, "", argument.as.floating.value);
+        } break;
+        case AK_OBJECT: {
+            printf("%*.s{", level, "");
+            if (argument.as.object.length > 0) printf("\n");
+            for (size_t i = 0; i < argument.as.object.length; ++i) {
+                print_var(argument.as.object.data[i], false, level + 2);
+
+                if (i < argument.as.object.length - 1) printf(",\n");
+            }
+            if (argument.as.object.length > 0) printf("\n%*.s", level, "");
+            printf("}");
+        } break;
+        case AK_PATH: {
+            printf("%*.s$", level, "");
+
+            for (size_t i = 0; i < argument.as.path.length; ++i) {
+                String string = argument.as.path.data[i];
+
+                printf("%.*s", (int)string.size, string.value);
+            }
         } break;
         default: assert(0 && "fix print_argument");
     }
@@ -17,59 +62,63 @@ static void print_argument(Argument argument) {
 void print_var(Var var, bool is_inside_array, int level) {
     switch (var.kind) {
         case VK_FUN_CALL: {
-            printf("%.*s = %.*s(", (int)var.name.size, var.name.value, (int)var.fun_call.name.size, var.fun_call.name.value);
-            for (size_t i = 0; i < var.fun_call.arguments.length; ++i) {
+            printf("%.*s = %.*s(", (int)var.name.size, var.name.value, (int)var.as.fun_call->name.size, var.as.fun_call->name.value);
+            for (size_t i = 0; i < var.as.fun_call->arguments.length; ++i) {
                 if (i > 0) printf(", ");
 
-                print_argument(var.fun_call.arguments.data[i]);
+                print_argument(var.as.fun_call->arguments.data[i], level);
             }
             printf(")");
         } break;
         case VK_ARRAY: {
             if (is_inside_array) {
-                printf("%*.s[\n", level, "");
+                printf("%*.s[", level, "");
             } else {
                 printf(
-                    "%*.s%.*s = [\n",
+                    "%*.s%.*s = [",
                     level,
                     "",
                     (int)var.name.size,
                     var.name.value
                 );
             }
-            for (size_t i = 0; i < var.array.length; ++i) {
-                print_var(var.array.data[i], true, level + 2);
+            if (var.as.array.length > 0) printf("\n");
+            for (size_t i = 0; i < var.as.array.length; ++i) {
+                print_argument(var.as.array.data[i], level + 2);
 
-                if (i < var.array.length - 1) printf(",\n");
+                if (i < var.as.array.length - 1) printf(",\n");
             }
+            if (var.as.array.length > 0) printf("\n%*.s", level, "");
             if (is_inside_array) {
-                printf("\n%*.s]", level, "");
+                printf("]");
             } else {
-                printf("\n%*.s]", level, "");
+                printf("]");
             }
             break;
         };
         case VK_OBJECT: {
             if (is_inside_array) {
-                printf("%*.s{\n", level, " ");
+                printf("%*.s{\n", level, "");
             } else {
                 printf(
-                    "%*.s%.*s = {\n",
+                    "%*.s%.*s = {",
                     level,
                     "",
                     (int)var.name.size,
                     var.name.value
                 );
             }
-            for (size_t i = 0; i < var.array.length; ++i) {
-                print_var(var.array.data[i], false, level + 2);
+            if (var.as.object.length > 0) printf("\n");
+            for (size_t i = 0; i < var.as.object.length; ++i) {
+                print_var(var.as.object.data[i], false, level + 2);
 
-                if (i < var.array.length - 1) printf(",\n");
+                if (i < var.as.object.length - 1) printf(",\n");
             }
+            if (var.as.object.length > 0) printf("\n%*.s", level, "");
             if (is_inside_array) {
-                printf("\n%*.s}", level, "");
+                printf("}");
             } else {
-                printf("\n%*.s}", level, "");
+                printf("}");
             }
             break;
         };
@@ -79,8 +128,8 @@ void print_var(Var var, bool is_inside_array, int level) {
                     "%*.s%.*s",
                     level,
                     "",
-                    (int)var.string.size,
-                    var.string.value
+                    (int)var.as.string.size,
+                    var.as.string.value
                 );
             } else {
                 printf(
@@ -89,14 +138,14 @@ void print_var(Var var, bool is_inside_array, int level) {
                     "",
                     (int)var.name.size,
                     var.name.value,
-                    (int)var.string.size,
-                    var.string.value
+                    (int)var.as.string.size,
+                    var.as.string.value
                 );
             }
         } break;
         case VK_INTEGER: {
             if (is_inside_array) {
-                printf("%*.s%ld", level, "", var.integer.value);
+                printf("%*.s%ld", level, "", var.as.integer.value);
             } else {
                 printf(
                     "%*.s%.*s = %ld",
@@ -104,13 +153,13 @@ void print_var(Var var, bool is_inside_array, int level) {
                     "",
                     (int)var.name.size,
                     var.name.value,
-                    var.integer.value
+                    var.as.integer.value
                 );
             }
         } break;
         case VK_FLOAT: {
             if (is_inside_array) {
-                printf("%*.s%f", level, "", var.floating.value);
+                printf("%*.s%f", level, "", var.as.floating.value);
             } else {
                 printf(
                     "%*.s%.*s = %f",
@@ -118,13 +167,13 @@ void print_var(Var var, bool is_inside_array, int level) {
                     "",
                     (int)var.name.size,
                     var.name.value,
-                    var.floating.value
+                    var.as.floating.value
                 );
             }
         } break;
         case VK_BOOLEAN: {
             if (is_inside_array) {
-                printf("%*.s%s", level, "", var.boolean.value == 1 ? "true" : "false");
+                printf("%*.s%s", level, "", var.as.boolean.value == 1 ? "true" : "false");
             } else {
                 printf(
                     "%*.s%.*s = %s",
@@ -132,7 +181,7 @@ void print_var(Var var, bool is_inside_array, int level) {
                     "",
                     (int)var.name.size,
                     var.name.value,
-                    var.boolean.value == 1 ? "true" : "false"
+                    var.as.boolean.value == 1 ? "true" : "false"
                 );
             }
         } break;
@@ -153,8 +202,9 @@ void print_var(Var var, bool is_inside_array, int level) {
             if (is_inside_array) {
                 printf("%*.s$", level, "");
 
-                for (size_t i = 0; i < var.path.length; ++i) {
-                    printf("%s", (char*)var.path.data[i]); // TODO: why the print works fine even without null char
+                for (size_t i = 0; i < var.as.path.length; ++i) {
+                    String string = var.as.path.data[i];
+                    printf("%.*s", (int)string.size, string.value);
                 }
             } else {
                 printf(
@@ -164,8 +214,9 @@ void print_var(Var var, bool is_inside_array, int level) {
                     (int)var.name.size,
                     var.name.value
                 );
-                for (size_t i = 0; i < var.path.length; ++i) {
-                    printf("%s", (char*)var.path.data[i]); // TODO: why the print works fine even without null char
+                for (size_t i = 0; i < var.as.path.length; ++i) {
+                    String string = var.as.path.data[i];
+                    printf("%.*s", (int)string.size, string.value); // TODO: why the print works fine even without null char
                 }
             }
         } break;
