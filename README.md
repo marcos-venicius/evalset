@@ -2,7 +2,7 @@
 
 The JSON sucessor?
 
-![immagine](https://github.com/user-attachments/assets/3e07d07a-cd22-4dfb-934e-30cf195d734b)
+![image](https://github.com/user-attachments/assets/4f1b5fbf-4fc1-4844-b208-fccbe2edd55a)
 
 ## The idea
 
@@ -82,7 +82,7 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 > Probably it'll be lazy evaluated to avoid big files being slow to load, it should be optional to the user api.
 
 > [!NOTE]
-> Comma inside arrays and objects are entirely optional
+> Comma to separate elements inside arrays, objects and function arguments are entirely optional
 
 ## Data types
 
