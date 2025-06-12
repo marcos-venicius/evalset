@@ -55,6 +55,15 @@ static void print_argument(Argument argument, int level) {
                 printf("%.*s", (int)string.size, string.value);
             }
         } break;
+        case AK_FUN_CALL: {
+            printf("%.*s(", (int)argument.as.fun_call->name.size, argument.as.fun_call->name.value);
+            for (size_t i = 0; i < argument.as.fun_call->arguments.length; ++i) {
+                if (i > 0) printf(", ");
+
+                print_argument(argument.as.fun_call->arguments.data[i], level);
+            }
+            printf(")");
+        } break;
         default: assert(0 && "fix print_argument");
     }
 }

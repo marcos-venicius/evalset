@@ -567,12 +567,44 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
                 continue;
             }
 
+            Argument argument = {0};
+
             switch (current->kind) {
                 case TK_INTEGER: {
                     Var_Data_Types integer = parse_integer_variable(&current);
-                    Argument argument = create_argument_from_kind(VK_INTEGER, integer);
-
-                    array_append(&var.fun_call->arguments, argument);
+                    argument = create_argument_from_kind(VK_INTEGER, integer);
+                } break;
+                case TK_FLOAT: {
+                    Var_Data_Types floating = parse_float_variable(&current);
+                    argument = create_argument_from_kind(VK_FLOAT, floating);
+                } break;
+                case TK_STRING: {
+                    Var_Data_Types string = parse_string_variable(&current);
+                    argument = create_argument_from_kind(VK_STRING, string);
+                } break;
+                case TK_NIL: {
+                    Var_Data_Types nil = parse_nil_variable(&current);
+                    argument = create_argument_from_kind(VK_NIL, nil);
+                } break;
+                case TK_TRUE: case TK_FALSE: {
+                    Var_Data_Types boolean = parse_bool_variable(current->kind == TK_TRUE, &current);
+                    argument = create_argument_from_kind(VK_BOOLEAN, boolean);
+                } break;
+                case TK_LSQUARE: {
+                    Var_Data_Types array = parse_array_variable(&current);
+                    argument = create_argument_from_kind(VK_ARRAY, array);
+                } break;
+                case TK_LBRACE: {
+                    Var_Data_Types object = parse_object_variable(&current);
+                    argument = create_argument_from_kind(VK_OBJECT, object);
+                } break;
+                case TK_PATH_ROOT: {
+                    Var_Data_Types path = parse_path_variable(&current);
+                    argument = create_argument_from_kind(VK_PATH, path);
+                } break;
+                case TK_SYM: {
+                    Var_Data_Types fun_call = parse_fun_call_variable(&current);
+                    argument = create_argument_from_kind(VK_FUN_CALL, fun_call);
                 } break;
                 default: {
                     fprintf(
@@ -586,6 +618,8 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
                     exit(1);
                 }
             }
+
+            array_append(&var.fun_call->arguments, argument);
 
             if (current->kind == TK_COMMA) current = current->next;
         }
