@@ -468,7 +468,7 @@ Token *lex(Lexer *lexer) {
                 lexing = false;
             } break;
             default: {
-                if (is_alpha(chr(lexer))) {
+                if (is_symbol(chr(lexer))) {
                     lex_symbol(lexer);
                 } else if (is_digit(chr(lexer))) {
                     lex_number(lexer);
