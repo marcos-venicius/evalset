@@ -17,7 +17,7 @@ size_t read_from_file(const char *filename, char **content) {
     const size_t stream_size = ftell(fptr);
     rewind(fptr);
 
-    if (*content != NULL) {
+    if (content != NULL) {
         *content = malloc((stream_size + 1) * sizeof(char));
 
         if (*content == NULL) {
@@ -34,6 +34,8 @@ size_t read_from_file(const char *filename, char **content) {
         }
 
         (*content)[stream_size] = '\0';
+    } else {
+        fprintf(stderr, "could not write file content because 'content' variable is null\n");
     }
 
     fclose(fptr);

@@ -433,6 +433,8 @@ static void lex_eof(Lexer *lexer) {
 }
 
 Token *lex(Lexer *lexer) {
+    if (lexer->content == NULL) return NULL;
+
     bool lexing = true;
 
     while (lexing) {

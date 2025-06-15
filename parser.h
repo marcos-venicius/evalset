@@ -125,7 +125,10 @@ struct Var {
 
 typedef struct {
     size_t length, capacity;
-    Var *data;
+    union {
+        Var *data;
+        Var *vars;
+    };
 } Parser;
 
 #define array_append(array, item) do { \
