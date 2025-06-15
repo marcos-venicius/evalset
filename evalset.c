@@ -5,6 +5,8 @@
 #include "./parser.h"
 #include "./io.h"
 
+#define TAB_SIZE 2
+
 void print_var(Var var, bool is_inside_array, int level);
 
 static void print_argument(Argument argument, int level) {
@@ -22,7 +24,7 @@ static void print_argument(Argument argument, int level) {
             printf("%*.s[", level, "");
             if (argument.as.array.length > 0) printf("\n");
             for (size_t i = 0; i < argument.as.array.length; ++i) {
-                print_argument(argument.as.array.data[i], level + 2);
+                print_argument(argument.as.array.data[i], level + TAB_SIZE);
 
                 if (i < argument.as.array.length - 1) printf(",\n");
             }
@@ -39,7 +41,7 @@ static void print_argument(Argument argument, int level) {
             printf("%*.s{", level, "");
             if (argument.as.object.length > 0) printf("\n");
             for (size_t i = 0; i < argument.as.object.length; ++i) {
-                print_var(argument.as.object.data[i], false, level + 2);
+                print_var(argument.as.object.data[i], false, level + TAB_SIZE);
 
                 if (i < argument.as.object.length - 1) printf(",\n");
             }
@@ -56,13 +58,13 @@ static void print_argument(Argument argument, int level) {
             }
         } break;
         case AK_FUN_CALL: {
-            printf("%.*s(", (int)argument.as.fun_call->name.size, argument.as.fun_call->name.value);
+            printf("%*.s%.*s(\n", level, "", (int)argument.as.fun_call->name.size, argument.as.fun_call->name.value);
             for (size_t i = 0; i < argument.as.fun_call->arguments.length; ++i) {
-                if (i > 0) printf(", ");
+                if (i > 0) printf(",\n");
 
-                print_argument(argument.as.fun_call->arguments.data[i], level);
+                print_argument(argument.as.fun_call->arguments.data[i], level + TAB_SIZE);
             }
-            printf(")");
+            printf("\n%*.s)", level, "");
         } break;
         default: assert(0 && "fix print_argument");
     }
@@ -71,12 +73,14 @@ static void print_argument(Argument argument, int level) {
 void print_var(Var var, bool is_inside_array, int level) {
     switch (var.kind) {
         case VK_FUN_CALL: {
-            printf("%.*s = %.*s(", (int)var.name.size, var.name.value, (int)var.as.fun_call->name.size, var.as.fun_call->name.value);
+            printf("%*.s%.*s = %.*s(", level, "", (int)var.name.size, var.name.value, (int)var.as.fun_call->name.size, var.as.fun_call->name.value);
+            if (var.as.fun_call->arguments.length > 0) printf("\n");
             for (size_t i = 0; i < var.as.fun_call->arguments.length; ++i) {
-                if (i > 0) printf(", ");
+                if (i > 0) printf(",\n");
 
-                print_argument(var.as.fun_call->arguments.data[i], level);
+                print_argument(var.as.fun_call->arguments.data[i], level + TAB_SIZE);
             }
+            if (var.as.fun_call->arguments.length > 0) printf("\n%*.s", level, "");
             printf(")");
         } break;
         case VK_ARRAY: {
@@ -93,7 +97,7 @@ void print_var(Var var, bool is_inside_array, int level) {
             }
             if (var.as.array.length > 0) printf("\n");
             for (size_t i = 0; i < var.as.array.length; ++i) {
-                print_argument(var.as.array.data[i], level + 2);
+                print_argument(var.as.array.data[i], level + TAB_SIZE);
 
                 if (i < var.as.array.length - 1) printf(",\n");
             }
@@ -119,7 +123,7 @@ void print_var(Var var, bool is_inside_array, int level) {
             }
             if (var.as.object.length > 0) printf("\n");
             for (size_t i = 0; i < var.as.object.length; ++i) {
-                print_var(var.as.object.data[i], false, level + 2);
+                print_var(var.as.object.data[i], false, level + TAB_SIZE);
 
                 if (i < var.as.object.length - 1) printf(",\n");
             }

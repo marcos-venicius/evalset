@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "./utils.h"
 
 // This do-while(0) is a hack to avoid some issues. https://www.geeksforgeeks.org/multiline-macros-in-c/
 // As the article says, we can wrap with parenthesis, but we're using -pedantic and
@@ -257,17 +258,11 @@ static char nchr(Lexer *lexer) {
 }
 
 static Token_Kind get_kind_keyword(Token *token, Token_Kind fallback) {
-    if (strncmp(token->content, "true", token->content_size) == 0) {
-        return TK_TRUE;
-    }
+    if (cmp_sized_strings(token->content, token->content_size, "true", 4)) return TK_TRUE;
 
-    if (strncmp(token->content, "false", token->content_size) == 0) {
-        return TK_FALSE;
-    }
+    if (cmp_sized_strings(token->content, token->content_size, "false", 5)) return TK_FALSE;
 
-    if (strncmp(token->content, "nil", token->content_size) == 0) {
-        return TK_NIL;
-    }
+    if (cmp_sized_strings(token->content, token->content_size, "nil", 3)) return TK_NIL;
 
     return fallback;
 }

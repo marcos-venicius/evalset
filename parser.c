@@ -7,6 +7,7 @@
 #include "./lexer.h"
 
 Var_Data_Types parse_object_variable(Token **ref);
+Var_Data_Types parse_array_variable(Token **ref);
 
 void advance_token(Token **ref) {
     if (ref != NULL && *ref != NULL) *ref = (*ref)->next;
@@ -425,121 +426,6 @@ Var_Data_Types parse_path_variable(Token **ref) {
     return var; 
 }
 
-Var_Data_Types parse_array_variable(Token **ref) {
-    advance_token(ref);
-
-    Var_Data_Types var = {
-        .array = {
-            .capacity = 0,
-            .length = 0,
-            .data = NULL
-        }
-    };
-
-    Token *current = unwrap_ref(ref);
-
-    while (current->kind != TK_EOF && current->kind != TK_RSQUARE) {
-        if (current->kind == TK_NEWLINE) {
-            current = current->next;
-            continue;
-        }
-
-        switch (current->kind) {
-            case TK_STRING: array_append(&var.array, create_argument_from_kind(VK_STRING, parse_string_variable(&current))); break;
-            case TK_INTEGER: array_append(&var.array, create_argument_from_kind(VK_INTEGER, parse_integer_variable(&current))); break;
-            case TK_FLOAT: array_append(&var.array, create_argument_from_kind(VK_FLOAT, parse_float_variable(&current))); break;
-            case TK_TRUE: array_append(&var.array, create_argument_from_kind(VK_BOOLEAN, parse_bool_variable(true, &current))); break;
-            case TK_FALSE: array_append(&var.array, create_argument_from_kind(VK_BOOLEAN, parse_bool_variable(false, &current))); break;
-            case TK_NIL: array_append(&var.array, create_argument_from_kind(VK_NIL, parse_nil_variable(&current))); break;
-            case TK_LSQUARE: array_append(&var.array, create_argument_from_kind(VK_ARRAY, parse_array_variable(&current))); break;
-            case TK_LBRACE: array_append(&var.array, create_argument_from_kind(VK_OBJECT, parse_object_variable(&current))); break;
-            case TK_PATH_ROOT: array_append(&var.array, create_argument_from_kind(VK_PATH, parse_path_variable(&current))); break;
-            default: {
-                fprintf(
-                    stderr,
-                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%.*s\033[0m which is \033[1;35m%s\033[0m\n",
-                    LOC_ERROR_ARG(current->loc),
-                    (int)current->content_size,
-                    current->content,
-                    token_kind_name(current->kind)
-                );
-                exit(1);
-            }
-        }
-
-        if (current->kind == TK_COMMA) {
-            current = current->next;
-        }
-    }
-
-    (void)expect_kind(&current, TK_RSQUARE);
-
-    advance_token(ref);
-
-    *ref = current;
-
-    return var;
-}
-
-Var_Data_Types parse_object_variable(Token **ref) {
-    advance_token(ref);
-
-    Var_Data_Types var = {
-        .object = {
-            .capacity = 0,
-            .length = 0,
-            .data = NULL
-        }
-    };
-
-    Token *current = unwrap_ref(ref);
-
-    while (current->kind != TK_EOF && current->kind != TK_RBRACE) {
-        if (current->kind == TK_NEWLINE) {
-            current = current->next;
-            continue;
-        }
-
-        Token *key_lhs = expect_two_kinds(&current, TK_SYM, TK_STRING);
-        (void)expect_kind(&current, TK_EQUAL);
-
-        switch (current->kind) {
-            case TK_STRING: array_append(&var.object, create_variable_from_kind(VK_STRING, key_lhs, parse_string_variable(&current))); break;
-            case TK_INTEGER: array_append(&var.object, create_variable_from_kind(VK_INTEGER, key_lhs, parse_integer_variable(&current))); break;
-            case TK_FLOAT: array_append(&var.object, create_variable_from_kind(VK_FLOAT, key_lhs, parse_float_variable(&current))); break;
-            case TK_TRUE: array_append(&var.object, create_variable_from_kind(VK_BOOLEAN, key_lhs, parse_bool_variable(true, &current))); break;
-            case TK_FALSE: array_append(&var.object, create_variable_from_kind(VK_BOOLEAN, key_lhs, parse_bool_variable(false, &current))); break;
-            case TK_NIL: array_append(&var.object, create_variable_from_kind(VK_NIL, key_lhs, parse_nil_variable(&current))); break;
-            case TK_LSQUARE: array_append(&var.object, create_variable_from_kind(VK_ARRAY, key_lhs, parse_array_variable(&current))); break;
-            case TK_LBRACE: array_append(&var.object, create_variable_from_kind(VK_OBJECT, key_lhs, parse_object_variable(&current))); break;
-            case TK_PATH_ROOT: array_append(&var.object, create_variable_from_kind(VK_PATH, key_lhs, parse_path_variable( &current))); break;
-            default: {
-                fprintf(
-                    stderr,
-                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%.*s\033[0m which is \033[1;35m%s\033[0m\n",
-                    LOC_ERROR_ARG(current->loc),
-                    (int)current->content_size,
-                    current->content,
-                    token_kind_name(current->kind)
-                );
-                exit(1);
-            }
-        }
-
-        if (current->kind == TK_COMMA) {
-            current = current->next;
-        }
-    }
-
-    (void)expect_kind(&current, TK_RBRACE);
-
-    advance_token(ref);
-
-    *ref = current;
-
-    return var;
-}
-
 Var_Data_Types parse_fun_call_variable(Token **ref) {
     Token *fun_name = *ref;
 
@@ -628,6 +514,123 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
     }
 
     expect_kind(ref, TK_RPAREN); // consume ')'
+
+    return var;
+}
+
+Var_Data_Types parse_array_variable(Token **ref) {
+    advance_token(ref);
+
+    Var_Data_Types var = {
+        .array = {
+            .capacity = 0,
+            .length = 0,
+            .data = NULL
+        }
+    };
+
+    Token *current = unwrap_ref(ref);
+
+    while (current->kind != TK_EOF && current->kind != TK_RSQUARE) {
+        if (current->kind == TK_NEWLINE) {
+            current = current->next;
+            continue;
+        }
+
+        switch (current->kind) {
+            case TK_STRING: array_append(&var.array, create_argument_from_kind(VK_STRING, parse_string_variable(&current))); break;
+            case TK_INTEGER: array_append(&var.array, create_argument_from_kind(VK_INTEGER, parse_integer_variable(&current))); break;
+            case TK_FLOAT: array_append(&var.array, create_argument_from_kind(VK_FLOAT, parse_float_variable(&current))); break;
+            case TK_TRUE: array_append(&var.array, create_argument_from_kind(VK_BOOLEAN, parse_bool_variable(true, &current))); break;
+            case TK_FALSE: array_append(&var.array, create_argument_from_kind(VK_BOOLEAN, parse_bool_variable(false, &current))); break;
+            case TK_NIL: array_append(&var.array, create_argument_from_kind(VK_NIL, parse_nil_variable(&current))); break;
+            case TK_LSQUARE: array_append(&var.array, create_argument_from_kind(VK_ARRAY, parse_array_variable(&current))); break;
+            case TK_LBRACE: array_append(&var.array, create_argument_from_kind(VK_OBJECT, parse_object_variable(&current))); break;
+            case TK_PATH_ROOT: array_append(&var.array, create_argument_from_kind(VK_PATH, parse_path_variable(&current))); break;
+            case TK_SYM: array_append(&var.array, create_argument_from_kind(VK_FUN_CALL, parse_fun_call_variable(&current))); break;
+            default: {
+                fprintf(
+                    stderr,
+                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%.*s\033[0m which is \033[1;35m%s\033[0m\n",
+                    LOC_ERROR_ARG(current->loc),
+                    (int)current->content_size,
+                    current->content,
+                    token_kind_name(current->kind)
+                );
+                exit(1);
+            }
+        }
+
+        if (current->kind == TK_COMMA) {
+            current = current->next;
+        }
+    }
+
+    (void)expect_kind(&current, TK_RSQUARE);
+
+    advance_token(ref);
+
+    *ref = current;
+
+    return var;
+}
+
+Var_Data_Types parse_object_variable(Token **ref) {
+    advance_token(ref);
+
+    Var_Data_Types var = {
+        .object = {
+            .capacity = 0,
+            .length = 0,
+            .data = NULL
+        }
+    };
+
+    Token *current = unwrap_ref(ref);
+
+    while (current->kind != TK_EOF && current->kind != TK_RBRACE) {
+        if (current->kind == TK_NEWLINE) {
+            current = current->next;
+            continue;
+        }
+
+        Token *key_lhs = expect_two_kinds(&current, TK_SYM, TK_STRING);
+        (void)expect_kind(&current, TK_EQUAL);
+
+        switch (current->kind) {
+            case TK_STRING: array_append(&var.object, create_variable_from_kind(VK_STRING, key_lhs, parse_string_variable(&current))); break;
+            case TK_INTEGER: array_append(&var.object, create_variable_from_kind(VK_INTEGER, key_lhs, parse_integer_variable(&current))); break;
+            case TK_FLOAT: array_append(&var.object, create_variable_from_kind(VK_FLOAT, key_lhs, parse_float_variable(&current))); break;
+            case TK_TRUE: array_append(&var.object, create_variable_from_kind(VK_BOOLEAN, key_lhs, parse_bool_variable(true, &current))); break;
+            case TK_FALSE: array_append(&var.object, create_variable_from_kind(VK_BOOLEAN, key_lhs, parse_bool_variable(false, &current))); break;
+            case TK_NIL: array_append(&var.object, create_variable_from_kind(VK_NIL, key_lhs, parse_nil_variable(&current))); break;
+            case TK_LSQUARE: array_append(&var.object, create_variable_from_kind(VK_ARRAY, key_lhs, parse_array_variable(&current))); break;
+            case TK_LBRACE: array_append(&var.object, create_variable_from_kind(VK_OBJECT, key_lhs, parse_object_variable(&current))); break;
+            case TK_PATH_ROOT: array_append(&var.object, create_variable_from_kind(VK_PATH, key_lhs, parse_path_variable( &current))); break;
+            case TK_SYM: array_append(&var.object, create_variable_from_kind(VK_FUN_CALL, key_lhs, parse_fun_call_variable(&current))); break;
+            default: {
+                fprintf(
+                    stderr,
+                    LOC_ERROR_FMT" Invalid syntax. Unexpected token \033[1;31m%.*s\033[0m which is \033[1;35m%s\033[0m\n",
+                    LOC_ERROR_ARG(current->loc),
+                    (int)current->content_size,
+                    current->content,
+                    token_kind_name(current->kind)
+                );
+                exit(1);
+            }
+        }
+
+        if (current->kind == TK_COMMA) {
+            current = current->next;
+        }
+    }
+
+    (void)expect_kind(&current, TK_RBRACE);
+
+    advance_token(ref);
+
+    *ref = current;
 
     return var;
 }
