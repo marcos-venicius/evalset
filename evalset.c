@@ -1,10 +1,15 @@
+#define PRINT_VARS 0
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "./lexer.h"
 #include "./parser.h"
 #include "./io.h"
+#if PRINT_VARS
 #include "./print.h"
+#endif
+#include "./interpreter.h"
 
 #define arg() shift(&argc, &argv)
 
@@ -42,6 +47,7 @@ int main(int argc, char **argv) {
 
     Parser parser = parse_tokens(head);
 
+    #if PRINT_VARS
     for (size_t i = 0; i < parser.length; i++) {
         Var var = parser.vars[i];
 
@@ -49,6 +55,9 @@ int main(int argc, char **argv) {
 
         if (i < parser.length - 1) printf("\n");
     }
+    #else
+    interpret(parser.vars, parser.length);
+    #endif
 
     parser_free(parser);
     lexer_free(&lexer);
