@@ -1,6 +1,7 @@
 #include "./parser.h"
 #include "./interpreter.h"
 #include "./utils.h"
+#include "./map.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,13 +33,10 @@ typedef struct {
     Symbol_Value as; // evaluated
 } Symbol;
 
-typedef struct {
-    size_t length, capacity;
-    Symbol *data;
-} Symbols; // TODO: use a hashmap
+typedef Map* Symbols;
 
 void interpret(const Var *vars, size_t length) {
-    Symbols symbols = {0};
+    Symbols symbols = map_new();
 
     for (size_t i = 0; i < length; i++) {
         Var var = vars[i];
@@ -59,46 +57,37 @@ void interpret(const Var *vars, size_t length) {
             default: assert(0 && "kind not evaluated yet");
         }
 
-        int update_index = -1;
+        map_set(symbols, symbol.name.value, &symbol, sizeof(Symbol));
+    }
 
-        // TODO: **high priority** implement a hash map
-        for (size_t j = 0; j < i; ++j) {
-            Symbol sym = symbols.data[j];
+    printf("Symbols table (%ld)\n", symbols->length);
+    for (size_t i = 0; i < MAP_BUCKET_SIZE; ++i) {
+        MapNode *node = symbols->nodes[i];
 
-            if (cmp_sized_strings(sym.name.value, sym.name.size, symbol.name.value, symbol.name.size)) {
-                update_index = j;
-                break;
+        while (node != NULL) {
+            Symbol symbol = *(Symbol*)node->data;
+
+            switch (symbol.kind) {
+                case SK_NIL: {
+                    printf("  %.*s = nil\n", (int)symbol.name.size, symbol.name.value);
+                } break;
+                case SK_STRING: {
+                    printf("  %.*s = %.*s\n", (int)symbol.name.size, symbol.name.value, (int)symbol.as.string.size, symbol.as.string.value);
+                } break;
+                case SK_INTEGER: {
+                    printf("  %.*s = %lu\n", (int)symbol.name.size, symbol.name.value, symbol.as.integer.value);
+                } break;
+                case SK_FLOAT: {
+                    printf("  %.*s = %lf\n", (int)symbol.name.size, symbol.name.value, symbol.as.floating.value);
+                } break;
+                case SK_BOOLEAN: {
+                    printf("  %.*s = %s\n", (int)symbol.name.size, symbol.name.value, symbol.as.boolean.value == 1 ? "true" : "false");
+                } break;
+                default: printf("unkonwn\n"); break;
             }
-        }
-
-        if (update_index != -1) {
-            symbols.data[update_index] = symbol;
-        } else {
-            array_append(&symbols, symbol);
+            node = node->next;
         }
     }
 
-    printf("Symbols table:\n");
-    for (size_t i = 0; i < symbols.length; ++i) {
-        Symbol symbol = symbols.data[i];
-
-        switch (symbol.kind) {
-            case SK_NIL: {
-                printf("  %.*s = nil\n", (int)symbol.name.size, symbol.name.value);
-            } break;
-            case SK_STRING: {
-                printf("  %.*s = %.*s\n", (int)symbol.name.size, symbol.name.value, (int)symbol.as.string.size, symbol.as.string.value);
-            } break;
-            case SK_INTEGER: {
-                printf("  %.*s = %lu\n", (int)symbol.name.size, symbol.name.value, symbol.as.integer.value);
-            } break;
-            case SK_FLOAT: {
-                printf("  %.*s = %lf\n", (int)symbol.name.size, symbol.name.value, symbol.as.floating.value);
-            } break;
-            case SK_BOOLEAN: {
-                printf("  %.*s = %s\n", (int)symbol.name.size, symbol.name.value, symbol.as.boolean.value == 1 ? "true" : "false");
-            } break;
-            default: printf("unkonwn\n"); break;
-        }
-    }
+    map_free(symbols);
 }

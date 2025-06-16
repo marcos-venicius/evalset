@@ -72,6 +72,7 @@ typedef struct {
 typedef struct {
     size_t capacity;
     size_t length;
+    // Each string in this path have a new allocation, free it yourself
     String *data;
 } Path;
 
@@ -118,6 +119,7 @@ typedef union {
 
 struct Var {
     Var_Kind kind;
+    // In this specific case, there is a new allocation, so be aware you need to free yourself
     String name;
 
     Var_Data_Types as;

@@ -15,6 +15,18 @@ void advance_token(Token **ref) {
 
 #define unwrap_ref(ref) *ref;
 
+static String copy_string_as_null_terminated(String string) {
+    String ret = {
+        .value = malloc(string.size + 1),
+        .size = string.size
+    };
+
+    memcpy(ret.value, string.value, string.size);
+    ret.value[string.size] = '\0';
+
+    return ret;
+}
+
 // TODO: do not advance the token. Let this job the an outside called
 Token *expect_kind(Token **ref, Token_Kind kind) {
     const char *expected_kind = token_kind_value(kind);
@@ -107,10 +119,10 @@ Var_Data_Types parse_string_variable(Token **tokens) {
     Token *var_rhs = expect_kind(tokens, TK_STRING);
 
     return (Var_Data_Types){
-        .string = {
+        .string = copy_string_as_null_terminated((String){
             .size = var_rhs->content_size,
             .value = var_rhs->content
-        }
+        })
     };
 }
 
@@ -146,114 +158,31 @@ Var_Data_Types parse_integer_variable(Token **tokens) {
 }
 
 static Var create_variable_from_kind(Var_Kind kind, Token* var_lhs, Var_Data_Types data) {
+    Var var = {
+        .kind = kind,
+        .name = {
+            .size = var_lhs->content_size,
+            .value = malloc(var_lhs->content_size + 1)
+        },
+    };
+
+    memcpy(var.name.value, var_lhs->content, var_lhs->content_size);
+    var.name.value[var_lhs->content_size] = '\0';
+
     switch (kind) {
-        case VK_STRING: {
-            return (Var){
-                .kind = VK_STRING,
-                .name = {
-                    .size = var_lhs->content_size,
-                    .value = var_lhs->content
-                },
-                .as = {
-                    .string = data.string
-                }
-            };
-        } break;
-        case VK_INTEGER: {
-            return (Var){
-                .kind = VK_INTEGER,
-                .name = {
-                    .size = var_lhs->content_size,
-                    .value = var_lhs->content
-                },
-                .as = {
-                    .integer = data.integer
-                }
-            };
-        } break;
-        case VK_FLOAT: {
-            return (Var){
-                .kind = VK_FLOAT,
-                .name = {
-                    .size = var_lhs->content_size,
-                    .value = var_lhs->content
-                },
-                .as = {
-                    .floating = data.floating
-                }
-            };
-        } break;
-        case VK_NIL: {
-            return (Var){
-                .kind = VK_NIL,
-                .name = {
-                    .size = var_lhs->content_size,
-                    .value = var_lhs->content
-                },
-            };
-        } break;
-        case VK_BOOLEAN: {
-            return (Var){
-                .kind = VK_BOOLEAN,
-                .name = {
-                    .size = var_lhs->content_size,
-                    .value = var_lhs->content
-                },
-                .as = {
-                    .boolean = data.boolean
-                }
-            };
-        } break;
-        case VK_ARRAY: {
-            return (Var){
-                .kind = VK_ARRAY,
-                .name = {
-                    .size = var_lhs->content_size,
-                    .value = var_lhs->content
-                },
-                .as = {
-                    .array = data.array
-                }
-            };
-        } break;
-        case VK_OBJECT: {
-            return (Var){
-                .kind = VK_OBJECT,
-                .name = {
-                    .size = var_lhs->content_size,
-                    .value = var_lhs->content
-                },
-                .as = {
-                    .object = data.object
-                }
-            };
-        } break;
-        case VK_PATH: {
-            return (Var){
-                .kind = VK_PATH,
-                .name = {
-                    .size = var_lhs->content_size,
-                    .value = var_lhs->content
-                },
-                .as = {
-                    .path = data.path
-                }
-            };
-        } break;
-        case VK_FUN_CALL: {
-            return (Var){
-                .kind = VK_FUN_CALL,
-                .name = {
-                    .size = var_lhs->content_size,
-                    .value = var_lhs->content
-                },
-                .as = {
-                    .fun_call = data.fun_call
-                }
-            };
-        } break;
+        case VK_STRING: var.as.string = data.string; break;
+        case VK_INTEGER: var.as.integer = data.integer; break;
+        case VK_FLOAT: var.as.floating = data.floating; break;
+        case VK_NIL: break;
+        case VK_BOOLEAN: var.as.boolean = data.boolean; break;
+        case VK_ARRAY: var.as.array = data.array; break;
+        case VK_OBJECT: var.as.object = data.object; break;
+        case VK_PATH: var.as.path = data.path; break;
+        case VK_FUN_CALL: var.as.fun_call = data.fun_call; break;
         default: assert(0 && "update variable creation function");
     }
+
+    return var;
 }
 
 static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
@@ -398,14 +327,10 @@ Var_Data_Types parse_path_variable(Token **ref) {
     while (current->kind == TK_PATH_CHUNK) {
         chunks++;
 
-        char *chunk = malloc(current->content_size);
-
-        memcpy(chunk, current->content, current->content_size);
-
-        String string = {
-            .value = chunk,
+        String string = copy_string_as_null_terminated((String){
+            .value = current->content,
             .size = current->content_size
-        };
+        });
 
         array_append(&var.path, string);
 
@@ -437,12 +362,10 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
         .fun_call = calloc(1, sizeof(Fun_Call)),
     };
 
-    var.fun_call->name = (String){
-        .value = malloc(fun_name->content_size * sizeof(char)),
+    var.fun_call->name = copy_string_as_null_terminated((String){
+        .value = fun_name->content,
         .size = fun_name->content_size
-    };
-
-    memcpy(var.fun_call->name.value, fun_name->content, fun_name->content_size);
+    });
 
     if ((*ref)->kind != TK_RPAREN) {
         Token* current = *ref;

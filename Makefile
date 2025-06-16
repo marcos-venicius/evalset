@@ -1,7 +1,7 @@
 CXX = clang
 CFLAGS = -Wall -Wextra -pedantic -ggdb
 
-evalset: evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o
+evalset: evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o map.o
 	$(CXX) $(CFLAGS) -o evalset $^
 
 parser.o: parser.h parser.c loc.h lexer.h
@@ -19,7 +19,10 @@ print.o: print.c print.h parser.h
 io.o: io.c io.h
 	$(CXX) $(CFLAGS) -c io.c -o io.o
 
-interpreter.o: interpreter.c interpreter.h parser.h utils.h
+map.o: map.c map.h utils.h
+	$(CXX) $(CFLAGS) -c map.c -o map.o
+
+interpreter.o: interpreter.c interpreter.h parser.h utils.h map.h
 	$(CXX) $(CFLAGS) -c interpreter.c -o interpreter.o
 
 evalset.o: evalset.c io.h parser.h lexer.h print.h
