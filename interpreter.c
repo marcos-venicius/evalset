@@ -1,6 +1,5 @@
 #include "./parser.h"
 #include "./interpreter.h"
-#include "./utils.h"
 #include "./map.h"
 #include <assert.h>
 #include <stdlib.h>
