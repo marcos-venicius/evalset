@@ -1,15 +1,13 @@
-#define PRINT_VARS 0
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "./lexer.h"
 #include "./parser.h"
 #include "./io.h"
-#if PRINT_VARS
 #include "./print.h"
-#endif
 #include "./interpreter.h"
+#include "utils.h"
 
 #define arg() shift(&argc, &argv)
 
@@ -20,12 +18,13 @@ char *shift(int *argc, char ***argv) {
 }
 
 void usage(FILE *stream, const char *program_name) {
-    fprintf(stream, "usage: %s <filename>\n", program_name);
+    fprintf(stream, "usage: %s <filename> [--print]\n", program_name);
 }
 
 int main(int argc, char **argv) {
     const char *program_name = arg();
     const char *filename = arg();
+    const char *flag = arg();
 
     if (filename == NULL) {
         usage(stderr, program_name);
@@ -47,17 +46,17 @@ int main(int argc, char **argv) {
 
     Parser parser = parse_tokens(head);
 
-    #if PRINT_VARS
-    for (size_t i = 0; i < parser.length; i++) {
-        Var var = parser.vars[i];
+    if (flag != NULL && cmp_sized_strings(flag, strlen(flag), "--print", 7)) {
+        for (size_t i = 0; i < parser.length; i++) {
+            Var var = parser.vars[i];
 
-        print_var(var, false, 0);
+            print_var(var, false, 0);
 
-        if (i < parser.length - 1) printf("\n");
+            if (i < parser.length - 1) printf("\n");
+        }
+    } else {
+        interpret(parser.vars, parser.length);
     }
-    #else
-    interpret(parser.vars, parser.length);
-    #endif
 
     parser_free(parser);
     lexer_free(&lexer);

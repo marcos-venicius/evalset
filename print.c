@@ -15,7 +15,7 @@ static void print_argument(Argument argument, int level) {
             printf("%*.s%ld", level, "", argument.as.integer.value);
         } break;
         case AK_STRING: {
-            printf("%*.s%.*s", level, "", (int)argument.as.string.size, argument.as.string.value);
+            printf("%*.s\"%s\"", level, "", argument.as.string.value);
         } break;
         case AK_ARRAY: {
             printf("%*.s[", level, "");
@@ -135,20 +135,18 @@ void print_var(Var var, bool is_inside_array, int level) {
         case VK_STRING: {
             if (is_inside_array) {
                 printf(
-                    "%*.s%.*s",
+                    "%*.s\"%s\"",
                     level,
                     "",
-                    (int)var.as.string.size,
                     var.as.string.value
                 );
             } else {
                 printf(
-                    "%*.s%.*s = %.*s",
+                    "%*.s%.*s = \"%s\"",
                     level,
                     "",
                     (int)var.name.size,
                     var.name.value,
-                    (int)var.as.string.size,
                     var.as.string.value
                 );
             }

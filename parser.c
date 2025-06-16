@@ -120,8 +120,8 @@ Var_Data_Types parse_string_variable(Token **tokens) {
 
     return (Var_Data_Types){
         .string = copy_string_as_null_terminated((String){
-            .size = var_rhs->content_size,
-            .value = var_rhs->content
+            .size = var_rhs->content_size - 2, // removing quotes
+            .value = var_rhs->content + 1
         })
     };
 }
