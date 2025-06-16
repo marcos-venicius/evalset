@@ -3,8 +3,8 @@ age = 234
 bank_account = nil
 money = 3.50
 tall = true
-small = false
 small = true 
+small = false
 
 #double_age = mul($/age, 2)
 
