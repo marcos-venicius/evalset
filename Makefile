@@ -1,7 +1,8 @@
 CXX = clang
 CFLAGS = -Wall -Wextra -pedantic -ggdb
+EXE_NAME = evalset
 
-evalset: evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o map.o
+$(EXE_NAME): evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o map.o
 	$(CXX) $(CFLAGS) -o evalset $^
 
 parser.o: parser.h parser.c loc.h lexer.h
@@ -29,4 +30,4 @@ evalset.o: evalset.c io.h parser.h lexer.h print.h
 	$(CXX) $(CFLAGS) -c evalset.c -o evalset.o
 
 clean:
-	rm -rf evalset *.o
+	rm -rf $(EXE_NAME) *.o
