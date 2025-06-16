@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -pedantic -ggdb
 EXE_NAME = evalset
 
 $(EXE_NAME): evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o map.o
-	$(CXX) $(CFLAGS) -o evalset $^
+	$(CXX) $(CFLAGS) -o $(EXE_NAME) $^
 
 parser.o: parser.h parser.c loc.h lexer.h
 	$(CXX) $(CFLAGS) -c parser.c -o parser.o

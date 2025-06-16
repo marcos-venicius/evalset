@@ -68,19 +68,19 @@ void interpret(const Var *vars, size_t length) {
 
             switch (symbol.kind) {
                 case SK_NIL: {
-                    printf("  %.*s = nil\n", (int)symbol.name.size, symbol.name.value);
+                    printf("  %s = nil\n", symbol.name.value);
                 } break;
                 case SK_STRING: {
-                    printf("  %.*s = %.*s\n", (int)symbol.name.size, symbol.name.value, (int)symbol.as.string.size, symbol.as.string.value);
+                    printf("  %s = %s\n", symbol.name.value, symbol.as.string.value);
                 } break;
                 case SK_INTEGER: {
-                    printf("  %.*s = %lu\n", (int)symbol.name.size, symbol.name.value, symbol.as.integer.value);
+                    printf("  %s = %lu\n", symbol.name.value, symbol.as.integer.value);
                 } break;
                 case SK_FLOAT: {
-                    printf("  %.*s = %lf\n", (int)symbol.name.size, symbol.name.value, symbol.as.floating.value);
+                    printf("  %s = %lf\n", symbol.name.value, symbol.as.floating.value);
                 } break;
                 case SK_BOOLEAN: {
-                    printf("  %.*s = %s\n", (int)symbol.name.size, symbol.name.value, symbol.as.boolean.value == 1 ? "true" : "false");
+                    printf("  %s = %s\n", symbol.name.value, symbol.as.boolean.value == 1 ? "true" : "false");
                 } break;
                 default: printf("unkonwn\n"); break;
             }
