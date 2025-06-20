@@ -9,6 +9,8 @@
 Var_Data_Types parse_object_variable(Token **ref);
 Var_Data_Types parse_array_variable(Token **ref);
 
+static Location current_location;
+
 void advance_token(Token **ref) {
     if (ref != NULL && *ref != NULL) *ref = (*ref)->next;
 }
@@ -118,6 +120,8 @@ Token *expect_two_kinds(Token **ref, Token_Kind a, Token_Kind b) {
 Var_Data_Types parse_string_variable(Token **tokens) {
     Token *var_rhs = expect_kind(tokens, TK_STRING);
 
+    current_location = var_rhs->loc;
+
     return (Var_Data_Types){
         .string = copy_string_as_null_terminated((String){
             .size = var_rhs->content_size - 2, // removing quotes
@@ -128,6 +132,8 @@ Var_Data_Types parse_string_variable(Token **tokens) {
 
 Var_Data_Types parse_integer_variable(Token **tokens) {
     Token *var_rhs = expect_kind(tokens, TK_INTEGER);
+
+    current_location = var_rhs->loc;
 
     char *const number = calloc(var_rhs->content_size, sizeof(char));
 
@@ -157,9 +163,10 @@ Var_Data_Types parse_integer_variable(Token **tokens) {
     };
 }
 
-static Var create_variable_from_kind(Var_Kind kind, Token* var_lhs, Var_Data_Types data) {
+static Var create_variable_from_kind(Location loc, Var_Kind kind, Token* var_lhs, Var_Data_Types data) {
     Var var = {
         .kind = kind,
+        .loc = loc,
         .name = {
             .size = var_lhs->content_size,
             .value = malloc(var_lhs->content_size + 1)
@@ -185,11 +192,12 @@ static Var create_variable_from_kind(Var_Kind kind, Token* var_lhs, Var_Data_Typ
     return var;
 }
 
-static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
+static Argument create_argument_from_kind(Location loc, Var_Kind kind, Var_Data_Types data) {
     switch (kind) {
         case VK_INTEGER: {
             return (Argument){
                 .kind = AK_INTEGER,
+                .loc = loc,
                 .as = {
                     .integer = data.integer
                 }
@@ -198,6 +206,7 @@ static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
         case VK_STRING: {
             return (Argument){
                 .kind = AK_STRING,
+                .loc = loc,
                 .as = {
                     .string = data.string
                 }
@@ -206,6 +215,7 @@ static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
         case VK_FLOAT: {
             return (Argument){
                 .kind = AK_FLOAT,
+                .loc = loc,
                 .as = {
                     .floating = data.floating
                 }
@@ -214,11 +224,13 @@ static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
         case VK_NIL: {
             return (Argument){
                 .kind = AK_NIL,
+                .loc = loc,
             };
         } break;
         case VK_BOOLEAN: {
             return (Argument){
                 .kind = AK_BOOLEAN,
+                .loc = loc,
                 .as = {
                     .boolean = data.boolean
                 }
@@ -227,6 +239,7 @@ static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
         case VK_ARRAY: {
             return (Argument){
                 .kind = AK_ARRAY,
+                .loc = loc,
                 .as = {
                     .array = data.array
                 }
@@ -235,6 +248,7 @@ static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
         case VK_OBJECT: {
             return (Argument){
                 .kind = AK_OBJECT,
+                .loc = loc,
                 .as = {
                     .object = data.object
                 }
@@ -243,6 +257,7 @@ static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
         case VK_PATH: {
             return (Argument){
                 .kind = AK_PATH,
+                .loc = loc,
                 .as = {
                     .path = data.path
                 }
@@ -251,6 +266,7 @@ static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
         case VK_FUN_CALL: {
             return (Argument){
                 .kind = AK_FUN_CALL,
+                .loc = loc,
                 .as = {
                     .fun_call = data.fun_call
                 }
@@ -262,6 +278,8 @@ static Argument create_argument_from_kind(Var_Kind kind, Var_Data_Types data) {
 
 Var_Data_Types parse_float_variable(Token **tokens) {
     Token *var_rhs = expect_kind(tokens, TK_FLOAT);
+
+    current_location = var_rhs->loc;
 
     char *const number = calloc(var_rhs->content_size, sizeof(char));
 
@@ -292,6 +310,8 @@ Var_Data_Types parse_float_variable(Token **tokens) {
 }
 
 Var_Data_Types parse_nil_variable(Token **ref) {
+    current_location = (*ref)->loc;
+
     advance_token(ref);
 
     return (Var_Data_Types){
@@ -299,8 +319,9 @@ Var_Data_Types parse_nil_variable(Token **ref) {
     };
 }
 
-Var_Data_Types parse_bool_variable(bool value, Token **tokens) {
-    advance_token(tokens);
+Var_Data_Types parse_bool_variable(bool value, Token **ref) {
+    current_location = (*ref)->loc;
+    advance_token(ref);
 
     return (Var_Data_Types){
         .boolean = {
@@ -310,6 +331,8 @@ Var_Data_Types parse_bool_variable(bool value, Token **tokens) {
 }
 
 Var_Data_Types parse_path_variable(Token **ref) {
+    current_location = (*ref)->loc;
+
     advance_token(ref);
 
     Var_Data_Types var = {
@@ -352,6 +375,8 @@ Var_Data_Types parse_path_variable(Token **ref) {
 }
 
 Var_Data_Types parse_fun_call_variable(Token **ref) {
+    Location fun_call_location = (*ref)->loc;
+
     Token *fun_name = *ref;
 
     advance_token(ref); // consume the function call name
@@ -381,39 +406,39 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
             switch (current->kind) {
                 case TK_INTEGER: {
                     Var_Data_Types integer = parse_integer_variable(&current);
-                    argument = create_argument_from_kind(VK_INTEGER, integer);
+                    argument = create_argument_from_kind(current_location, VK_INTEGER, integer);
                 } break;
                 case TK_FLOAT: {
                     Var_Data_Types floating = parse_float_variable(&current);
-                    argument = create_argument_from_kind(VK_FLOAT, floating);
+                    argument = create_argument_from_kind(current_location, VK_FLOAT, floating);
                 } break;
                 case TK_STRING: {
                     Var_Data_Types string = parse_string_variable(&current);
-                    argument = create_argument_from_kind(VK_STRING, string);
+                    argument = create_argument_from_kind(current_location, VK_STRING, string);
                 } break;
                 case TK_NIL: {
                     Var_Data_Types nil = parse_nil_variable(&current);
-                    argument = create_argument_from_kind(VK_NIL, nil);
+                    argument = create_argument_from_kind(current_location, VK_NIL, nil);
                 } break;
                 case TK_TRUE: case TK_FALSE: {
                     Var_Data_Types boolean = parse_bool_variable(current->kind == TK_TRUE, &current);
-                    argument = create_argument_from_kind(VK_BOOLEAN, boolean);
+                    argument = create_argument_from_kind(current_location, VK_BOOLEAN, boolean);
                 } break;
                 case TK_LSQUARE: {
                     Var_Data_Types array = parse_array_variable(&current);
-                    argument = create_argument_from_kind(VK_ARRAY, array);
+                    argument = create_argument_from_kind(current_location, VK_ARRAY, array);
                 } break;
                 case TK_LBRACE: {
                     Var_Data_Types object = parse_object_variable(&current);
-                    argument = create_argument_from_kind(VK_OBJECT, object);
+                    argument = create_argument_from_kind(current_location, VK_OBJECT, object);
                 } break;
                 case TK_PATH_ROOT: {
                     Var_Data_Types path = parse_path_variable(&current);
-                    argument = create_argument_from_kind(VK_PATH, path);
+                    argument = create_argument_from_kind(current_location, VK_PATH, path);
                 } break;
                 case TK_SYM: {
                     Var_Data_Types fun_call = parse_fun_call_variable(&current);
-                    argument = create_argument_from_kind(VK_FUN_CALL, fun_call);
+                    argument = create_argument_from_kind(current_location, VK_FUN_CALL, fun_call);
                 } break;
                 default: {
                     fprintf(
@@ -436,6 +461,8 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
         *ref = current;
     }
 
+    current_location = fun_call_location;
+
     expect_kind(ref, TK_RPAREN); // consume ')'
 
     return var;
@@ -443,6 +470,8 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
 
 Var_Data_Types parse_array_variable(Token **ref) {
     advance_token(ref);
+
+    current_location = (*ref)->loc;
 
     Var_Data_Types var = {
         .array = {
@@ -461,16 +490,16 @@ Var_Data_Types parse_array_variable(Token **ref) {
         }
 
         switch (current->kind) {
-            case TK_STRING: array_append(&var.array, create_argument_from_kind(VK_STRING, parse_string_variable(&current))); break;
-            case TK_INTEGER: array_append(&var.array, create_argument_from_kind(VK_INTEGER, parse_integer_variable(&current))); break;
-            case TK_FLOAT: array_append(&var.array, create_argument_from_kind(VK_FLOAT, parse_float_variable(&current))); break;
-            case TK_TRUE: array_append(&var.array, create_argument_from_kind(VK_BOOLEAN, parse_bool_variable(true, &current))); break;
-            case TK_FALSE: array_append(&var.array, create_argument_from_kind(VK_BOOLEAN, parse_bool_variable(false, &current))); break;
-            case TK_NIL: array_append(&var.array, create_argument_from_kind(VK_NIL, parse_nil_variable(&current))); break;
-            case TK_LSQUARE: array_append(&var.array, create_argument_from_kind(VK_ARRAY, parse_array_variable(&current))); break;
-            case TK_LBRACE: array_append(&var.array, create_argument_from_kind(VK_OBJECT, parse_object_variable(&current))); break;
-            case TK_PATH_ROOT: array_append(&var.array, create_argument_from_kind(VK_PATH, parse_path_variable(&current))); break;
-            case TK_SYM: array_append(&var.array, create_argument_from_kind(VK_FUN_CALL, parse_fun_call_variable(&current))); break;
+            case TK_STRING: array_append(&var.array, create_argument_from_kind(current_location, VK_STRING, parse_string_variable(&current))); break;
+            case TK_INTEGER: array_append(&var.array, create_argument_from_kind(current_location, VK_INTEGER, parse_integer_variable(&current))); break;
+            case TK_FLOAT: array_append(&var.array, create_argument_from_kind(current_location, VK_FLOAT, parse_float_variable(&current))); break;
+            case TK_TRUE: array_append(&var.array, create_argument_from_kind(current_location, VK_BOOLEAN, parse_bool_variable(true, &current))); break;
+            case TK_FALSE: array_append(&var.array, create_argument_from_kind(current_location, VK_BOOLEAN, parse_bool_variable(false, &current))); break;
+            case TK_NIL: array_append(&var.array, create_argument_from_kind(current_location, VK_NIL, parse_nil_variable(&current))); break;
+            case TK_LSQUARE: array_append(&var.array, create_argument_from_kind(current_location, VK_ARRAY, parse_array_variable(&current))); break;
+            case TK_LBRACE: array_append(&var.array, create_argument_from_kind(current_location, VK_OBJECT, parse_object_variable(&current))); break;
+            case TK_PATH_ROOT: array_append(&var.array, create_argument_from_kind(current_location, VK_PATH, parse_path_variable(&current))); break;
+            case TK_SYM: array_append(&var.array, create_argument_from_kind(current_location, VK_FUN_CALL, parse_fun_call_variable(&current))); break;
             default: {
                 fprintf(
                     stderr,
@@ -500,6 +529,7 @@ Var_Data_Types parse_array_variable(Token **ref) {
 
 Var_Data_Types parse_object_variable(Token **ref) {
     advance_token(ref);
+    current_location = (*ref)->loc;
 
     Var_Data_Types var = {
         .object = {
@@ -521,16 +551,16 @@ Var_Data_Types parse_object_variable(Token **ref) {
         (void)expect_kind(&current, TK_EQUAL);
 
         switch (current->kind) {
-            case TK_STRING: array_append(&var.object, create_variable_from_kind(VK_STRING, key_lhs, parse_string_variable(&current))); break;
-            case TK_INTEGER: array_append(&var.object, create_variable_from_kind(VK_INTEGER, key_lhs, parse_integer_variable(&current))); break;
-            case TK_FLOAT: array_append(&var.object, create_variable_from_kind(VK_FLOAT, key_lhs, parse_float_variable(&current))); break;
-            case TK_TRUE: array_append(&var.object, create_variable_from_kind(VK_BOOLEAN, key_lhs, parse_bool_variable(true, &current))); break;
-            case TK_FALSE: array_append(&var.object, create_variable_from_kind(VK_BOOLEAN, key_lhs, parse_bool_variable(false, &current))); break;
-            case TK_NIL: array_append(&var.object, create_variable_from_kind(VK_NIL, key_lhs, parse_nil_variable(&current))); break;
-            case TK_LSQUARE: array_append(&var.object, create_variable_from_kind(VK_ARRAY, key_lhs, parse_array_variable(&current))); break;
-            case TK_LBRACE: array_append(&var.object, create_variable_from_kind(VK_OBJECT, key_lhs, parse_object_variable(&current))); break;
-            case TK_PATH_ROOT: array_append(&var.object, create_variable_from_kind(VK_PATH, key_lhs, parse_path_variable( &current))); break;
-            case TK_SYM: array_append(&var.object, create_variable_from_kind(VK_FUN_CALL, key_lhs, parse_fun_call_variable(&current))); break;
+            case TK_STRING: array_append(&var.object, create_variable_from_kind(current_location, VK_STRING, key_lhs, parse_string_variable(&current))); break;
+            case TK_INTEGER: array_append(&var.object, create_variable_from_kind(current_location, VK_INTEGER, key_lhs, parse_integer_variable(&current))); break;
+            case TK_FLOAT: array_append(&var.object, create_variable_from_kind(current_location, VK_FLOAT, key_lhs, parse_float_variable(&current))); break;
+            case TK_TRUE: array_append(&var.object, create_variable_from_kind(current_location, VK_BOOLEAN, key_lhs, parse_bool_variable(true, &current))); break;
+            case TK_FALSE: array_append(&var.object, create_variable_from_kind(current_location, VK_BOOLEAN, key_lhs, parse_bool_variable(false, &current))); break;
+            case TK_NIL: array_append(&var.object, create_variable_from_kind(current_location, VK_NIL, key_lhs, parse_nil_variable(&current))); break;
+            case TK_LSQUARE: array_append(&var.object, create_variable_from_kind(current_location, VK_ARRAY, key_lhs, parse_array_variable(&current))); break;
+            case TK_LBRACE: array_append(&var.object, create_variable_from_kind(current_location, VK_OBJECT, key_lhs, parse_object_variable(&current))); break;
+            case TK_PATH_ROOT: array_append(&var.object, create_variable_from_kind(current_location, VK_PATH, key_lhs, parse_path_variable( &current))); break;
+            case TK_SYM: array_append(&var.object, create_variable_from_kind(current_location, VK_FUN_CALL, key_lhs, parse_fun_call_variable(&current))); break;
             default: {
                 fprintf(
                     stderr,
@@ -575,16 +605,16 @@ Parser parse_tokens(Token *head) {
         (void)expect_kind(&current, TK_EQUAL);
 
         switch (current->kind) {
-            case TK_STRING: array_append(&parser, create_variable_from_kind(VK_STRING, var_lhs, parse_string_variable(&current))); break;
-            case TK_INTEGER: array_append(&parser, create_variable_from_kind(VK_INTEGER, var_lhs, parse_integer_variable(&current))); break;
-            case TK_FLOAT: array_append(&parser, create_variable_from_kind(VK_FLOAT, var_lhs, parse_float_variable(&current))); break;
-            case TK_TRUE: array_append(&parser, create_variable_from_kind(VK_BOOLEAN, var_lhs, parse_bool_variable(true, &current))); break;
-            case TK_FALSE: array_append(&parser, create_variable_from_kind(VK_BOOLEAN, var_lhs, parse_bool_variable(false, &current))); break;
-            case TK_NIL: array_append(&parser, create_variable_from_kind(VK_NIL, var_lhs, parse_nil_variable(&current))); break;
-            case TK_LSQUARE: array_append(&parser, create_variable_from_kind(VK_ARRAY, var_lhs, parse_array_variable(&current))); break;
-            case TK_LBRACE: array_append(&parser, create_variable_from_kind(VK_OBJECT, var_lhs, parse_object_variable(&current))); break;
-            case TK_PATH_ROOT: array_append(&parser, create_variable_from_kind(VK_PATH, var_lhs, parse_path_variable(&current))); break;
-            case TK_SYM: array_append(&parser, create_variable_from_kind(VK_FUN_CALL, var_lhs, parse_fun_call_variable(&current))); break;
+            case TK_STRING: array_append(&parser, create_variable_from_kind(current_location, VK_STRING, var_lhs, parse_string_variable(&current))); break;
+            case TK_INTEGER: array_append(&parser, create_variable_from_kind(current_location, VK_INTEGER, var_lhs, parse_integer_variable(&current))); break;
+            case TK_FLOAT: array_append(&parser, create_variable_from_kind(current_location, VK_FLOAT, var_lhs, parse_float_variable(&current))); break;
+            case TK_TRUE: array_append(&parser, create_variable_from_kind(current_location, VK_BOOLEAN, var_lhs, parse_bool_variable(true, &current))); break;
+            case TK_FALSE: array_append(&parser, create_variable_from_kind(current_location, VK_BOOLEAN, var_lhs, parse_bool_variable(false, &current))); break;
+            case TK_NIL: array_append(&parser, create_variable_from_kind(current_location, VK_NIL, var_lhs, parse_nil_variable(&current))); break;
+            case TK_LSQUARE: array_append(&parser, create_variable_from_kind(current_location, VK_ARRAY, var_lhs, parse_array_variable(&current))); break;
+            case TK_LBRACE: array_append(&parser, create_variable_from_kind(current_location, VK_OBJECT, var_lhs, parse_object_variable(&current))); break;
+            case TK_PATH_ROOT: array_append(&parser, create_variable_from_kind(current_location, VK_PATH, var_lhs, parse_path_variable(&current))); break;
+            case TK_SYM: array_append(&parser, create_variable_from_kind(current_location, VK_FUN_CALL, var_lhs, parse_fun_call_variable(&current))); break;
 
             default: {
                 fprintf(
@@ -619,6 +649,21 @@ const char *var_kind_name(Var_Kind var_kind) {
         case VK_ARRAY: return "ARRAY";
         case VK_PATH: return "PATH";
         case VK_FUN_CALL: return "FUN_CALL";
+        default: return "UNKNOWN";
+    }
+}
+
+const char *argument_kind_name(Argument_Kind kind) {
+    switch (kind) {
+        case AK_NIL: return "nil";
+        case AK_INTEGER: return "integer";
+        case AK_STRING: return "string";
+        case AK_FLOAT: return "float";
+        case AK_BOOLEAN: return "boolean";
+        case AK_PATH: return "path";
+        case AK_OBJECT: return "object";
+        case AK_ARRAY: return "array";
+        case AK_FUN_CALL: return "fun_call";
         default: return "UNKNOWN";
     }
 }

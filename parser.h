@@ -92,6 +92,8 @@ typedef union {
 struct Argument {
     Argument_Kind kind;
 
+    Location loc;
+
     Argument_Data_Types as;
 };
 
@@ -121,6 +123,8 @@ struct Var {
     Var_Kind kind;
     // In this specific case, there is a new allocation, so be aware you need to free yourself
     String name;
+
+    Location loc;
 
     Var_Data_Types as;
 };
@@ -155,5 +159,6 @@ typedef struct {
 Parser parse_tokens(Token *head);
 void parser_free(Parser parser);
 const char *var_kind_name(Var_Kind var_kind);
+const char *argument_kind_name(Argument_Kind kind);
 
 #endif // PARSER_H_

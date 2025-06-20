@@ -8,7 +8,7 @@ $(EXE_NAME): evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o map.o
 parser.o: parser.h parser.c loc.h lexer.h
 	$(CXX) $(CFLAGS) -c parser.c -o parser.o
 
-lexer.o: lexer.c lexer.h utils.h
+lexer.o: lexer.c lexer.h utils.h loc.h
 	$(CXX) $(CFLAGS) -c lexer.c -o lexer.o
 
 utils.o: utils.c utils.h
@@ -23,7 +23,7 @@ io.o: io.c io.h
 map.o: map.c map.h utils.h
 	$(CXX) $(CFLAGS) -c map.c -o map.o
 
-interpreter.o: interpreter.c interpreter.h parser.h map.h
+interpreter.o: interpreter.c interpreter.h parser.h map.h loc.h utils.h
 	$(CXX) $(CFLAGS) -c interpreter.c -o interpreter.o
 
 evalset.o: evalset.c io.h parser.h lexer.h print.h

@@ -1,6 +1,7 @@
 #ifndef LEXER_H_
 #define LEXER_H_
 
+#include "./loc.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -50,11 +51,6 @@ typedef enum {
     TK_PATH_ROOT,
     TK_PATH_CHUNK
 } Token_Kind;
-
-typedef struct {
-    unsigned int line, col;
-    const char *filename;
-} Location;
 
 typedef struct Token Token;
 
