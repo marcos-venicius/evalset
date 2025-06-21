@@ -6,12 +6,21 @@ tall = true
 small = true 
 small = false
 
-total = sum_i(10, 20, 3, 6, -2)
+total = sum_i(10, 20, 3, 6, -2, sum_i(1000, -500))
 floats = sum_f(
     0.1
     0.2
-    10
-    20.5435
+    sum_f(
+        3.1415
+        sum_i(
+            10
+            10
+        )
+    )
+    sum_i(
+        100
+        -100
+    )
 )
 
 #double_age = mul($/age, 2)
