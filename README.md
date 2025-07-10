@@ -104,7 +104,7 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 - [x] `[]any concat_a([]any...)`, receive N `arrays` as argument and return all arrays concatenated.
 - [x] `string concat_s(string...)`, receive N `strings` as argument and return a single string concatenated.
 - [x] `string join_as([]string, string?)`, receive an array of strings and a separator (which can be nil) then return a joined string. if separator is `nil`, the array will be joined without counting with the separator.
-- [ ] `[]string keys(object)`, receive an object as argument and return an array of strings with all its keys
+- [x] `[]string keys(object)`, receive an object as argument and return an array of strings with all its keys
 - [x] `integer len(array)`, receive an array as argument and return the length of it
 - [x] `integer len(string)`, receive a string as argument and return the length of it
 

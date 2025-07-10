@@ -17,6 +17,7 @@
 #define BUILTIN_FUN_CONCAT_A "concat_a"
 #define BUILTIN_FUN_CONCAT_S "concat_s"
 #define BUILTIN_FUN_JOIN_AS "join_as"
+#define BUILTIN_FUN_KEYS "keys"
 
 typedef enum {
     SK_NIL = 0,
@@ -343,6 +344,46 @@ String __bultin_fun_call_join_as(Symbols symbols, Location loc, Fun_Call *fun_ca
     return (String){.value = string, .size = string_size};
 }
 
+Array __bultin_fun_call_keys(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    if (fun_call->arguments.length != 1) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_KEYS" expects 1 arguments but received %ld\n",
+            LOC_ERROR_ARG(loc),
+            fun_call->arguments.length
+        );
+        exit(1);
+    }
+
+    Argument arg = fun_call->arguments.data[0];
+    Symbol_Value value = reduce_argument(symbols, arg.loc, arg);
+
+    if (value.kind != SK_OBJECT) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_KEYS" \033[1;35m%s\033[0m is not an object\n",
+            LOC_ERROR_ARG(arg.loc),
+            symbol_kind_name(value.kind)
+        );
+        exit(1);
+    }
+
+    Array result = {0};
+
+    for (size_t i = 0; i < value.as.object.length; ++i) {
+        Var var = value.as.object.data[i];
+        Argument argument = {
+            .kind = AK_STRING,
+            .loc = var.loc, // this is the wrong location
+            .as.string = var.name
+        };
+
+        array_append(&result, argument);
+    }
+
+    return result;
+}
+
 long __bultin_fun_call_len(Symbols symbols, Location loc, Fun_Call *fun_call) {
     if (fun_call->arguments.length != 1) {
         fprintf(
@@ -473,6 +514,11 @@ Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_
         return (Symbol_Value){
             .kind = SK_STRING,
             .as.string = __bultin_fun_call_join_as(symbols, loc, fun_call),
+        };
+    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_KEYS, strlen(BUILTIN_FUN_KEYS))) {
+        return (Symbol_Value){
+            .kind = SK_ARRAY,
+            .as.array = __bultin_fun_call_keys(symbols, loc, fun_call),
         };
     } else {
         fprintf(

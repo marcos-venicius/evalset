@@ -37,8 +37,8 @@ join_as_one_len = len($/join_as_one)
 join_as_two_len = len($/join_as_two)
 
 # `[]string keys(object)`, receive an object as argument and return an array of strings with all its keys
-address = { city = "New York", country = "USA" }
-#keys = keys($/address)
+address = { city = "New York", country = "USA", "street name" = "Something" }
+keys = keys($/address)
 
 # `integer len(array)`, receive an array as argument and return the length of it
 array = [1, 2, 3, 4, 6, 34, 2, 9]
