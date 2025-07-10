@@ -205,18 +205,20 @@ double __bultin_fun_call_sum_af(Symbols symbols, Location loc, Fun_Call *fun_cal
         Argument arg = sym.as.array.data[i];
         Symbol_Value value = reduce_argument(symbols, arg.loc, arg);
 
-        if (value.kind != SK_FLOAT) {
-            fprintf(
-                stderr,
-                LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AF" expects an array of float as argument but received \033[1;35m%s\033[0m at index %ld\n",
-                LOC_ERROR_ARG(arg.loc),
-                symbol_kind_name(value.kind),
-                i
-            );
-            exit(1);
+        switch (value.kind) {
+            case SK_FLOAT: sum += value.as.floating.value; break;
+            case SK_INTEGER: sum += value.as.integer.value; break;
+            default: {
+                fprintf(
+                    stderr,
+                    LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AF" expects an array of float as argument but received \033[1;35m%s\033[0m at index %ld\n",
+                    LOC_ERROR_ARG(arg.loc),
+                    symbol_kind_name(value.kind),
+                    i
+                );
+                exit(1);
+            }
         }
-
-        sum += value.as.floating.value;
     }
 
     return sum;
