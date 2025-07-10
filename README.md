@@ -2,7 +2,7 @@
 
 The JSON sucessor?
 
-![image](https://github.com/user-attachments/assets/4f1b5fbf-4fc1-4844-b208-fccbe2edd55a)
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6e4c34b6-f6a2-4af3-9549-9d5b1fecbf91" />
 
 ## The idea
 
