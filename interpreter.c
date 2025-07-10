@@ -16,6 +16,7 @@
 #define BUILTIN_FUN_SUM_AF "sum_af"
 #define BUILTIN_FUN_CONCAT_A "concat_a"
 #define BUILTIN_FUN_CONCAT_S "concat_s"
+#define BUILTIN_FUN_JOIN_AS "join_as"
 
 typedef enum {
     SK_NIL = 0,
@@ -113,7 +114,7 @@ long __bultin_fun_call_sum_ai(Symbols symbols, Location loc, Fun_Call *fun_call)
     if (fun_call->arguments.length == 0) {
         fprintf(
             stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AI" expects an array of integers as parameter\n",
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AI" expects an array of integers as argument\n",
             LOC_ERROR_ARG(loc)
         );
         exit(1);
@@ -133,7 +134,7 @@ long __bultin_fun_call_sum_ai(Symbols symbols, Location loc, Fun_Call *fun_call)
     if (sym.kind != SK_ARRAY) {
         fprintf(
             stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AI" expects an array of integer as parameter but received \033[1;35m%s\033[0m\n",
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AI" expects an array of integer as argument but received \033[1;35m%s\033[0m\n",
             LOC_ERROR_ARG(loc),
             symbol_kind_name(sym.kind)
         );
@@ -149,7 +150,7 @@ long __bultin_fun_call_sum_ai(Symbols symbols, Location loc, Fun_Call *fun_call)
         if (value.kind != SK_INTEGER) {
             fprintf(
                 stderr,
-                LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AI" expects an array of integer as parameter but received \033[1;35m%s\033[0m at index %ld\n",
+                LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AI" expects an array of integer as argument but received \033[1;35m%s\033[0m at index %ld\n",
                 LOC_ERROR_ARG(arg.loc),
                 symbol_kind_name(value.kind),
                 i
@@ -167,7 +168,7 @@ double __bultin_fun_call_sum_af(Symbols symbols, Location loc, Fun_Call *fun_cal
     if (fun_call->arguments.length == 0) {
         fprintf(
             stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AF" expects an array of floats as parameter\n",
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AF" expects an array of floats as argument\n",
             LOC_ERROR_ARG(loc)
         );
         exit(1);
@@ -187,7 +188,7 @@ double __bultin_fun_call_sum_af(Symbols symbols, Location loc, Fun_Call *fun_cal
     if (sym.kind != SK_ARRAY) {
         fprintf(
             stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AF" expects an array of float as parameter but received \033[1;35m%s\033[0m\n",
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AF" expects an array of float as argument but received \033[1;35m%s\033[0m\n",
             LOC_ERROR_ARG(loc),
             symbol_kind_name(sym.kind)
         );
@@ -203,7 +204,7 @@ double __bultin_fun_call_sum_af(Symbols symbols, Location loc, Fun_Call *fun_cal
         if (value.kind != SK_FLOAT) {
             fprintf(
                 stderr,
-                LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AF" expects an array of float as parameter but received \033[1;35m%s\033[0m at index %ld\n",
+                LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_AF" expects an array of float as argument but received \033[1;35m%s\033[0m at index %ld\n",
                 LOC_ERROR_ARG(arg.loc),
                 symbol_kind_name(value.kind),
                 i
@@ -270,11 +271,83 @@ String __bultin_fun_call_concat_s(Symbols symbols, Location loc, Fun_Call *fun_c
     return (String){.value = string, .size = string_size};
 }
 
+String __bultin_fun_call_join_as(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    if (fun_call->arguments.length != 2) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects 2 arguments but received %ld\n",
+            LOC_ERROR_ARG(loc),
+            fun_call->arguments.length
+        );
+        exit(1);
+    }
+
+    char *string = calloc(1, 1);
+    size_t string_size = 1;
+
+    Argument arg1 = fun_call->arguments.data[0];
+    Symbol_Value strings = reduce_argument(symbols, loc, arg1);
+
+    if (strings.kind != SK_ARRAY) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_JOIN_AS" \033[1;35m%s\033[0m is not an array\n",
+            LOC_ERROR_ARG(arg1.loc),
+            symbol_kind_name(strings.kind)
+        );
+        exit(1);
+    }
+
+    Argument arg2 = fun_call->arguments.data[1];
+    Symbol_Value separator = reduce_argument(symbols, loc, arg2);
+
+    if (separator.kind != SK_STRING && separator.kind != SK_NIL) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_JOIN_AS" \033[1;35m%s\033[0m is not of type string?\n",
+            LOC_ERROR_ARG(arg2.loc),
+            symbol_kind_name(separator.kind)
+        );
+        exit(1);
+    }
+
+    for (size_t i = 0; i < strings.as.array.length; ++i) {
+        Argument arg = strings.as.array.data[i];
+        Symbol_Value value = reduce_argument(symbols, arg.loc, arg);
+
+        if (value.kind != SK_STRING) {
+            fprintf(
+                stderr,
+                LOC_ERROR_FMT" Function "BUILTIN_FUN_JOIN_AS" \033[1;35m%s\033[0m is not a string\n",
+                LOC_ERROR_ARG(arg.loc),
+                symbol_kind_name(value.kind)
+            );
+            exit(1);
+        }
+
+        if (i > 0 && separator.kind == SK_STRING) {
+            string_size += separator.as.string.size;
+
+            string = realloc(string, string_size);
+            strncat(string, separator.as.string.value, separator.as.string.size);
+        }
+
+        string_size += value.as.string.size;
+
+        string = realloc(string, string_size);
+        strncat(string, value.as.string.value, value.as.string.size);
+    }
+
+    string[string_size] = '\0';
+
+    return (String){.value = string, .size = string_size};
+}
+
 long __bultin_fun_call_len(Symbols symbols, Location loc, Fun_Call *fun_call) {
     if (fun_call->arguments.length == 0) {
         fprintf(
             stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects an array as parameter\n",
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects an array as argument\n",
             LOC_ERROR_ARG(loc)
         );
         exit(1);
@@ -294,7 +367,7 @@ long __bultin_fun_call_len(Symbols symbols, Location loc, Fun_Call *fun_call) {
     if (sym.kind != SK_ARRAY) {
         fprintf(
             stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects an array as parameter but received \033[1;35m%s\033[0m\n",
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects an array as argument but received \033[1;35m%s\033[0m\n",
             LOC_ERROR_ARG(loc),
             symbol_kind_name(sym.kind)
         );
@@ -324,7 +397,7 @@ long __bultin_fun_call_sum_i(Symbols symbols, Location loc, Fun_Call *fun_call) 
                 default: {
                     fprintf(
                         stderr,
-                        LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_I" expects only integers as parameters but received a \033[1;35m%s\033[0m\n",
+                        LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_I" expects only integers as arguments but received a \033[1;35m%s\033[0m\n",
                         LOC_ERROR_ARG(argument.loc),
                         argument_kind_name(argument.kind) // TODO: display the wrong value
                     );
@@ -352,7 +425,7 @@ double __bultin_fun_call_sum_f(Symbols symbols, Location loc, Fun_Call *fun_call
             default: {
                 fprintf(
                     stderr,
-                    LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_F" expects integers or floats as parameters but received a \033[1;35m%s\033[0m\n",
+                    LOC_ERROR_FMT" Function "BUILTIN_FUN_SUM_F" expects integers or floats as arguments but received a \033[1;35m%s\033[0m\n",
                     LOC_ERROR_ARG(argument.loc),
                     argument_kind_name(argument.kind) // TODO: display the wrong value
                 );
@@ -399,6 +472,11 @@ Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_
         return (Symbol_Value){
             .kind = SK_STRING,
             .as.string = __bultin_fun_call_concat_s(symbols, loc, fun_call),
+        };
+    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_JOIN_AS, strlen(BUILTIN_FUN_JOIN_AS))) {
+        return (Symbol_Value){
+            .kind = SK_STRING,
+            .as.string = __bultin_fun_call_join_as(symbols, loc, fun_call),
         };
     } else {
         fprintf(

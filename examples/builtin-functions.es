@@ -29,8 +29,8 @@ concat_s = concat_s("Hello ", $/user_name, ". How are you?")
 
 # `string join_as([]string, string?)`, receive an array of strings and a separator (which can be nil) then return a joined string.
 # if separator is `nil`, the array will be joined without counting with the separator.
-#join_as_one = join_as(["Hello", $/user_name, "How are you?"], ",")
-#join_as_two = join_as(["Hello", $/user_name, "How are you?"], nil)
+join_as_one = join_as(["Hello", $/user_name, "How are you?"], ", ")
+join_as_two = join_as(["Hello", $/user_name, "How are you?"], nil)
 
 # `[]string keys(object)`, receive an object as argument and return an array of strings with all its keys
 address = { city = "New York", country = "USA" }
