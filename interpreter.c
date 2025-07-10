@@ -18,6 +18,7 @@
 #define BUILTIN_FUN_CONCAT_S "concat_s"
 #define BUILTIN_FUN_JOIN_AS "join_as"
 #define BUILTIN_FUN_KEYS "keys"
+#define BUILTIN_FUN_IOTA "iota"
 
 typedef enum {
     SK_NIL = 0,
@@ -59,6 +60,8 @@ typedef Map* Symbols;
 Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_call);
 void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array);
 Symbol interpret_var(Symbols symbols, Var var);
+
+static long __builtin_iota_current_value = 0;
 
 static const char *symbol_kind_name(Symbol_Kind kind) {
     switch (kind) {
@@ -474,6 +477,20 @@ double __bultin_fun_call_sum_f(Symbols symbols, Location loc, Fun_Call *fun_call
     return sum;
 }
 
+long __bultin_fun_call_iota(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    if (fun_call->arguments.length != 0) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_IOTA" expects 0 arguments but received %ld\n",
+            LOC_ERROR_ARG(loc),
+            fun_call->arguments.length
+        );
+        exit(1);
+    }
+
+    return __builtin_iota_current_value++;
+}
+
 Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_call) {
     if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_SUM_I, strlen(BUILTIN_FUN_SUM_I))) {
         return (Symbol_Value){
@@ -519,6 +536,11 @@ Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_
         return (Symbol_Value){
             .kind = SK_ARRAY,
             .as.array = __bultin_fun_call_keys(symbols, loc, fun_call),
+        };
+    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_IOTA, strlen(BUILTIN_FUN_IOTA))) {
+        return (Symbol_Value){
+            .kind = SK_INTEGER,
+            .as.integer.value = __bultin_fun_call_iota(symbols, loc, fun_call),
         };
     } else {
         fprintf(

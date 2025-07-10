@@ -107,6 +107,7 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 - [x] `[]string keys(object)`, receive an object as argument and return an array of strings with all its keys
 - [x] `integer len(array)`, receive an array as argument and return the length of it
 - [x] `integer len(string)`, receive a string as argument and return the length of it
+- [x] `integer iota()`, returns an integer which auto-increment every time it's called
 
 I still have some internal functions in my, but for now, I'll leave only these ones.
 I'm thinking about the best way to implement this yet.

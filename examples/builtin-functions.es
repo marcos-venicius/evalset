@@ -43,3 +43,9 @@ keys = keys($/address)
 # `integer len(array)`, receive an array as argument and return the length of it
 array = [1, 2, 3, 4, 6, 34, 2, 9]
 array_len = len($/array)
+
+# `integer iota()`, returns an integer which auto-increment every time it's called
+iota_a = iota()
+iota_b = iota()
+iota_c = iota()
+iota_d = iota()
