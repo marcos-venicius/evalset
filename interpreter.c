@@ -344,37 +344,33 @@ String __bultin_fun_call_join_as(Symbols symbols, Location loc, Fun_Call *fun_ca
 }
 
 long __bultin_fun_call_len(Symbols symbols, Location loc, Fun_Call *fun_call) {
-    if (fun_call->arguments.length == 0) {
+    if (fun_call->arguments.length != 1) {
         fprintf(
             stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects an array as argument\n",
-            LOC_ERROR_ARG(loc)
-        );
-        exit(1);
-    }
-
-    if (fun_call->arguments.length > 1) {
-        fprintf(
-            stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects only one argument which is an array\n",
-            LOC_ERROR_ARG(loc)
+            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects 1 argument but received %ld\n",
+            LOC_ERROR_ARG(loc),
+            fun_call->arguments.length
         );
         exit(1);
     }
 
     Symbol_Value sym = reduce_argument(symbols, fun_call->arguments.data[0].loc, fun_call->arguments.data[0]);
 
-    if (sym.kind != SK_ARRAY) {
-        fprintf(
-            stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects an array as argument but received \033[1;35m%s\033[0m\n",
-            LOC_ERROR_ARG(loc),
-            symbol_kind_name(sym.kind)
-        );
-        exit(1);
+    switch (sym.kind) {
+        case SK_ARRAY: return sym.as.array.length;
+        case SK_STRING: return sym.as.string.size;
+        default: {
+            fprintf(
+                stderr,
+                LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects an array as argument but received \033[1;35m%s\033[0m\n",
+                LOC_ERROR_ARG(loc),
+                symbol_kind_name(sym.kind)
+            );
+            exit(1);
+        }
     }
 
-    return sym.as.array.length;
+    return 0;
 }
 
 long __bultin_fun_call_sum_i(Symbols symbols, Location loc, Fun_Call *fun_call) {
