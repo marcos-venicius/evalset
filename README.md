@@ -97,16 +97,16 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 
 ## Internal functions
 
-- **TODO** `integer sum_i(integer...)`, receive N `integers` as argument and return the sum of all of it as integer.
-- **TODO** `float sum_f(float...)`, receive N `floats` as argument and return the sum of all of it as float.
-- **TODO** `integer sum_ai([]integer...)`, receive an `array of integers` as argument and return the sum of all it's items as `integer`.
-- **TODO** `float sum_af([]float...)`, receive an `array of floats` as argument and return the sum of all its items as `float`.
-- **TODO** `[]any concat_a([]any...)`, receive N `arrays` as argument and return all arrays concatenated.
-- **TODO** `string concat_s(string...)`, receive N `strings` as argument and return a single string concatenated.
-- **TODO** `string join_as([]string, string?)`, receive an array of strings and a separator (which can be nil) then return a joined string. if separator is `nil`, the array will be joined without counting with the separator.
-- **TODO** `[]string keys(object)`, receive an object as argument and return an array of strings with all its keys
-- **TODO** `integer len(array)`, receive an array as argument and return the length of it
-- **TODO** `integer len(string)`, receive a string as argument and return the length of it
+- [x] `integer sum_i(integer...)`, receive N `integers` as argument and return the sum of all of it as integer.
+- [x] `float sum_f(float...)`, receive N `floats` as argument and return the sum of all of it as float.
+- [x] `integer sum_ai([]integer...)`, receive an `array of integers` as argument and return the sum of all it's items as `integer`.
+- [x] `float sum_af([]float...)`, receive an `array of floats` as argument and return the sum of all its items as `float`.
+- [x] `[]any concat_a([]any...)`, receive N `arrays` as argument and return all arrays concatenated.
+- [x] `string concat_s(string...)`, receive N `strings` as argument and return a single string concatenated.
+- [x] `string join_as([]string, string?)`, receive an array of strings and a separator (which can be nil) then return a joined string. if separator is `nil`, the array will be joined without counting with the separator.
+- [ ] `[]string keys(object)`, receive an object as argument and return an array of strings with all its keys
+- [x] `integer len(array)`, receive an array as argument and return the length of it
+- [x] `integer len(string)`, receive a string as argument and return the length of it
 
 I still have some internal functions in my, but for now, I'll leave only these ones.
 I'm thinking about the best way to implement this yet.
