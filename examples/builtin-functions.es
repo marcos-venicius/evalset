@@ -25,7 +25,7 @@ concat_a = concat_a(
 
 # `string concat_s(string...)`, receive N `strings` as argument and return a single string concatenated.
 user_name = "World"
-#concat_s = concat_s("Hello ", $/user_name)
+concat_s = concat_s("Hello ", $/user_name, ". How are you?")
 
 # `string join_as([]string, string?)`, receive an array of strings and a separator (which can be nil) then return a joined string.
 # if separator is `nil`, the array will be joined without counting with the separator.

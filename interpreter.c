@@ -15,6 +15,7 @@
 #define BUILTIN_FUN_SUM_AI "sum_ai"
 #define BUILTIN_FUN_SUM_AF "sum_af"
 #define BUILTIN_FUN_CONCAT_A "concat_a"
+#define BUILTIN_FUN_CONCAT_S "concat_s"
 
 typedef enum {
     SK_NIL = 0,
@@ -240,6 +241,35 @@ Array __bultin_fun_call_concat_a(Symbols symbols, Location loc, Fun_Call *fun_ca
     return result;
 }
 
+String __bultin_fun_call_concat_s(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    char *string = calloc(1, 1);
+    size_t string_size = 1;
+
+    for (size_t argument_index = 0; argument_index < fun_call->arguments.length; ++argument_index) {
+        Argument arg = fun_call->arguments.data[argument_index];
+        Symbol_Value value = reduce_argument(symbols, arg.loc, arg);
+
+        if (value.kind != SK_STRING) {
+            fprintf(
+                stderr,
+                LOC_ERROR_FMT" Function "BUILTIN_FUN_CONCAT_S" \033[1;35m%s\033[0m is not a string\n",
+                LOC_ERROR_ARG(arg.loc),
+                symbol_kind_name(value.kind)
+            );
+            exit(1);
+        }
+
+        string_size += value.as.string.size;
+
+        string = realloc(string, string_size);
+        strncat(string, value.as.string.value, value.as.string.size);
+    }
+
+    string[string_size] = '\0';
+
+    return (String){.value = string, .size = string_size};
+}
+
 long __bultin_fun_call_len(Symbols symbols, Location loc, Fun_Call *fun_call) {
     if (fun_call->arguments.length == 0) {
         fprintf(
@@ -364,6 +394,11 @@ Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_
         return (Symbol_Value){
             .kind = SK_ARRAY,
             .as.array = __bultin_fun_call_concat_a(symbols, loc, fun_call),
+        };
+    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_CONCAT_S, strlen(BUILTIN_FUN_CONCAT_S))) {
+        return (Symbol_Value){
+            .kind = SK_STRING,
+            .as.string = __bultin_fun_call_concat_s(symbols, loc, fun_call),
         };
     } else {
         fprintf(
