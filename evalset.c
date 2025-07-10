@@ -18,7 +18,7 @@ char *shift(int *argc, char ***argv) {
 }
 
 void usage(FILE *stream, const char *program_name) {
-    fprintf(stream, "usage: %s <filename> [--print]\n", program_name);
+    fprintf(stream, "usage: %s <filename> [--format]\n", program_name);
 }
 
 int main(int argc, char **argv) {
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
 
     Parser parser = parse_tokens(head);
 
-    if (flag != NULL && cmp_sized_strings(flag, strlen(flag), "--print", 7)) {
+    if (flag != NULL && cmp_sized_strings(flag, strlen(flag), "--format", 8)) {
         for (size_t i = 0; i < parser.length; i++) {
             Var var = parser.vars[i];
 

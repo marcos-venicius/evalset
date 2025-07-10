@@ -51,7 +51,7 @@ static void print_argument(Argument argument, int level) {
             for (size_t i = 0; i < argument.as.path.length; ++i) {
                 String string = argument.as.path.data[i];
 
-                printf("%.*s", (int)string.size, string.value);
+                printf("/%.*s", (int)string.size, string.value);
             }
         } break;
         case AK_FUN_CALL: {
@@ -212,7 +212,7 @@ void print_var(Var var, bool is_inside_array, int level) {
 
                 for (size_t i = 0; i < var.as.path.length; ++i) {
                     String string = var.as.path.data[i];
-                    printf("%.*s", (int)string.size, string.value);
+                    printf("/%.*s", (int)string.size, string.value);
                 }
             } else {
                 printf(
@@ -224,7 +224,7 @@ void print_var(Var var, bool is_inside_array, int level) {
                 );
                 for (size_t i = 0; i < var.as.path.length; ++i) {
                     String string = var.as.path.data[i];
-                    printf("%.*s", (int)string.size, string.value); // TODO: why the print works fine even without null char
+                    printf("/%.*s", (int)string.size, string.value); // TODO: why the print works fine even without null char
                 }
             }
         } break;

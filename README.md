@@ -105,6 +105,7 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 - **TODO** `string concat_s(string...)`, receive N `strings` as argument and return a single string concatenated.
 - **TODO** `string join_as([]string, string?)`, receive an array of strings and a separator (which can be nil) then return a joined string. if separator is `nil`, the array will be joined without counting with the separator.
 - **TODO** `[]string keys(object)`, receive an object as argument and return an array of strings with all its keys
+- **TODO** `integer len(array)`, receive an array as argument and return the length of it
 
 I still have some internal functions in my, but for now, I'll leave only these ones.
 I'm thinking about the best way to implement this yet.

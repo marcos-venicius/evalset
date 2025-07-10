@@ -23,7 +23,7 @@ io.o: io.c io.h
 map.o: map.c map.h utils.h
 	$(CXX) $(CFLAGS) -c map.c -o map.o
 
-interpreter.o: interpreter.c interpreter.h parser.h map.h loc.h utils.h
+interpreter.o: interpreter.c interpreter.h parser.h map.h loc.h utils.h assertf.h
 	$(CXX) $(CFLAGS) -c interpreter.c -o interpreter.o
 
 evalset.o: evalset.c io.h parser.h lexer.h print.h

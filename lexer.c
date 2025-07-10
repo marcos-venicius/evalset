@@ -336,6 +336,8 @@ static void lex_path_chunk(Lexer *lexer) {
         // throw_error(invalid_path_chunk_error, lexer);
         save_token(lexer, TK_SLASH);
     } else {
+        lexer->bot++;
+
         save_token(lexer, TK_PATH_CHUNK);
     }
 }
