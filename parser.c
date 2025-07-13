@@ -343,6 +343,7 @@ Var_Data_Types parse_path_variable(Token **ref) {
         }
     };
 
+    Token *last = NULL;
     Token *current = unwrap_ref(ref);
 
     int chunks = 0;
@@ -357,15 +358,24 @@ Var_Data_Types parse_path_variable(Token **ref) {
 
         array_append(&var.path, string);
 
+        last = current;
         current = current->next;
     }
 
-    if (chunks == 0) {
-        fprintf(
-            stderr,
-            LOC_ERROR_FMT" Invalid syntax. Invalid path\n",
-            LOC_ERROR_ARG(current->loc)
-        );
+    if (chunks != 1) {
+        if (last == NULL) {
+            fprintf(
+                stderr,
+                LOC_ERROR_FMT" Invalid syntax. Invalid path\n",
+                LOC_ERROR_ARG(current->loc)
+            );
+        } else {
+            fprintf(
+                stderr,
+                LOC_ERROR_FMT" Invalid syntax. Invalid path\n",
+                LOC_ERROR_ARG(last->loc)
+            );
+        }
         exit(1);
     }
 
