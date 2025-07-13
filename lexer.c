@@ -333,7 +333,6 @@ static void lex_path_chunk(Lexer *lexer) {
     }
 
     if (path_size == 0) {
-        // throw_error(invalid_path_chunk_error, lexer);
         save_token(lexer, TK_SLASH);
     } else {
         lexer->bot++;
@@ -399,7 +398,6 @@ static void lex_number(Lexer *lexer) {
     }
 
     if (digits_count == 0) {
-        // throw_error(invalid_number_error, lexer);
         save_token(lexer, TK_MINUS);
     } else {
         digits_count = 0;
@@ -476,6 +474,8 @@ Token *lex(Lexer *lexer) {
                     lex_number(lexer);
                 } else {
                     throw_error(unrecognized_char_error, lexer);
+
+                    nchr(lexer);
                 }
             } break;
         }
