@@ -20,6 +20,9 @@
 #define BUILTIN_FUN_KEYS "keys"
 #define BUILTIN_FUN_IOTA "iota"
 
+#define BUILTIN_PRIVATE_FUN_GET_OBJECT_INDEX "##get_object_index"
+#define BUILTIN_PRIVATE_FUN_GET_ARRAY_INDEX "##get_array_index"
+
 typedef enum {
     SK_NIL = 0,
     SK_INTEGER,
@@ -112,6 +115,43 @@ Symbol_Value reduce_argument(Symbols symbols, Location loc, Argument arg) {
         case AK_FUN_CALL: return eval_builtin_fun_call(symbols, loc, arg.as.fun_call);
         default: assertf(false, "unreacheable");
     }
+}
+
+Symbol_Value __builtin_private_fun_call_get_object_index(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    Argument arg0 = fun_call->arguments.data[0];
+    Argument arg1 = fun_call->arguments.data[1];
+
+    Symbol_Value item = reduce_argument(symbols, arg0.loc, arg0);
+    Symbol_Value index = reduce_argument(symbols, arg1.loc, arg1);
+
+    if (index.kind == SK_STRING && item.kind != SK_OBJECT) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" You cannot index \033[1;35m%s\033[0m with \"%s\"\n",
+            LOC_ERROR_ARG(loc),
+            symbol_kind_name(item.kind),
+            index.as.string.value
+        );
+        exit(1);
+    }
+
+    // TODO: change object to a map
+    for (size_t i = 0; i < item.as.object.length; ++i) {
+        Var var = item.as.object.data[i];
+
+        if (cmp_sized_strings(var.name.value, var.name.size, index.as.string.value, index.as.string.size)) {
+            return interpret_var(symbols, var).value;
+        }
+    }
+
+    fprintf(
+        stderr,
+        LOC_ERROR_FMT" key \"\033[1;35m%s\033[0m\" not found\n",
+        LOC_ERROR_ARG(loc),
+        index.as.string.value
+    );
+
+    exit(1);
 }
 
 long __bultin_fun_call_sum_ai(Symbols symbols, Location loc, Fun_Call *fun_call) {
@@ -225,6 +265,8 @@ double __bultin_fun_call_sum_af(Symbols symbols, Location loc, Fun_Call *fun_cal
 }
 
 Array __bultin_fun_call_concat_a(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    (void)loc;
+
     Array result = {0};
 
     for (size_t argument_index = 0; argument_index < fun_call->arguments.length; ++argument_index) {
@@ -249,6 +291,8 @@ Array __bultin_fun_call_concat_a(Symbols symbols, Location loc, Fun_Call *fun_ca
 }
 
 String __bultin_fun_call_concat_s(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    (void)loc;
+
     char *string = calloc(1, 1);
     size_t string_size = 1;
 
@@ -480,6 +524,9 @@ double __bultin_fun_call_sum_f(Symbols symbols, Location loc, Fun_Call *fun_call
 }
 
 long __bultin_fun_call_iota(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    (void)symbols;
+    (void)loc;
+
     if (fun_call->arguments.length != 0) {
         fprintf(
             stderr,
@@ -544,6 +591,8 @@ Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_
             .kind = SK_INTEGER,
             .as.integer.value = __bultin_fun_call_iota(symbols, loc, fun_call),
         };
+    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_PRIVATE_FUN_GET_OBJECT_INDEX, strlen(BUILTIN_PRIVATE_FUN_GET_OBJECT_INDEX))) {
+        return __builtin_private_fun_call_get_object_index(symbols, loc, fun_call);
     } else {
         fprintf(
             stderr,

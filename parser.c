@@ -167,14 +167,22 @@ static Var create_variable_from_kind(Location loc, Var_Kind kind, Token* var_lhs
     Var var = {
         .kind = kind,
         .loc = loc,
-        .name = {
-            .size = var_lhs->content_size,
-            .value = malloc(var_lhs->content_size + 1)
-        },
+        .name = {0},
     };
 
-    memcpy(var.name.value, var_lhs->content, var_lhs->content_size);
-    var.name.value[var_lhs->content_size] = '\0';
+    if (var_lhs->kind == TK_STRING) {
+        var.name.size = var_lhs->content_size - 2;
+        var.name.value = malloc(var.name.size + 1);
+
+        memcpy(var.name.value, var_lhs->content+1, var.name.size);
+        var.name.value[var.name.size] = '\0';
+    } else {
+        var.name.value = malloc(var_lhs->content_size + 1);
+        var.name.size = var_lhs->content_size;
+
+        memcpy(var.name.value, var_lhs->content, var_lhs->content_size);
+        var.name.value[var_lhs->content_size] = '\0';
+    }
 
     switch (kind) {
         case VK_STRING: var.as.string = data.string; break;
@@ -330,7 +338,7 @@ Var_Data_Types parse_bool_variable(bool value, Token **ref) {
     };
 }
 
-Var_Data_Types parse_path_variable(Token **ref) {
+Var_Data_Types_Indentified parse_path_variable(Token **ref) {
     current_location = (*ref)->loc;
 
     advance_token(ref);
@@ -381,7 +389,62 @@ Var_Data_Types parse_path_variable(Token **ref) {
 
     *ref = current;
 
-    return var; 
+    if ((*ref)->kind == TK_LSQUARE) {
+        advance_token(ref);
+
+        while ((*ref)->kind == TK_NEWLINE) advance_token(ref);
+
+        Argument reference_argument = create_argument_from_kind(last->loc, VK_PATH, var);
+        Argument index_argument;
+
+        Token *index_token = *ref;
+
+        switch (index_token->kind) {
+            case TK_INTEGER: {
+                index_argument = create_argument_from_kind(index_token->loc, VK_INTEGER, parse_integer_variable(ref));
+            } break;
+            case TK_STRING: {
+                index_argument = create_argument_from_kind(index_token->loc, VK_STRING, parse_string_variable(ref));
+            } break;
+            default: {
+                fprintf(
+                    stderr,
+                    LOC_ERROR_FMT" Invalid syntax. Invalid index type %s\n",
+                    LOC_ERROR_ARG(last->loc),
+                    token_kind_name((*ref)->kind)
+                );
+                exit(1);
+            };
+        }
+
+        while ((*ref)->kind == TK_NEWLINE) advance_token(ref);
+
+        (void)expect_kind(ref, TK_RSQUARE);
+
+        Var_Data_Types fun = {
+            .fun_call = calloc(1, sizeof(Fun_Call))
+        };
+
+        switch (index_argument.kind) {
+            case AK_INTEGER: { fun.fun_call->name.value = "##get_array_index"; } break;
+            case AK_STRING: { fun.fun_call->name.value = "##get_object_index"; } break;
+            default: break;
+        }
+
+        fun.fun_call->name.size = strlen(fun.fun_call->name.value);
+        array_append(&fun.fun_call->arguments, reference_argument);
+        array_append(&fun.fun_call->arguments, index_argument);
+        
+        return (Var_Data_Types_Indentified){
+            .kind = VK_FUN_CALL,
+            .as = fun
+        };
+    }
+
+    return (Var_Data_Types_Indentified){
+        .kind = VK_PATH,
+        .as = var
+    };
 }
 
 Var_Data_Types parse_fun_call_variable(Token **ref) {
@@ -443,8 +506,17 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
                     argument = create_argument_from_kind(current_location, VK_OBJECT, object);
                 } break;
                 case TK_PATH_ROOT: {
-                    Var_Data_Types path = parse_path_variable(&current);
-                    argument = create_argument_from_kind(current_location, VK_PATH, path);
+                    Var_Data_Types_Indentified path = parse_path_variable(&current);
+
+                    switch (path.kind) {
+                        case VK_PATH: {
+                            argument = create_argument_from_kind(current_location, VK_PATH, path.as);
+                        } break;
+                        case VK_FUN_CALL: {
+                            argument = create_argument_from_kind(current_location, VK_FUN_CALL, path.as);
+                        } break;
+                        default: break;
+                    }
                 } break;
                 case TK_SYM: {
                     Var_Data_Types fun_call = parse_fun_call_variable(&current);
@@ -508,7 +580,19 @@ Var_Data_Types parse_array_variable(Token **ref) {
             case TK_NIL: array_append(&var.array, create_argument_from_kind(current_location, VK_NIL, parse_nil_variable(&current))); break;
             case TK_LSQUARE: array_append(&var.array, create_argument_from_kind(current_location, VK_ARRAY, parse_array_variable(&current))); break;
             case TK_LBRACE: array_append(&var.array, create_argument_from_kind(current_location, VK_OBJECT, parse_object_variable(&current))); break;
-            case TK_PATH_ROOT: array_append(&var.array, create_argument_from_kind(current_location, VK_PATH, parse_path_variable(&current))); break;
+            case TK_PATH_ROOT: {
+                Var_Data_Types_Indentified path = parse_path_variable(&current);
+
+                switch (path.kind) {
+                    case VK_PATH: {
+                        array_append(&var.array, create_argument_from_kind(current_location, VK_PATH, path.as))
+                    } break;
+                    case VK_FUN_CALL: {
+                        array_append(&var.array, create_argument_from_kind(current_location, VK_FUN_CALL, path.as))
+                    } break;
+                    default: break;
+                }
+            } break;
             case TK_SYM: array_append(&var.array, create_argument_from_kind(current_location, VK_FUN_CALL, parse_fun_call_variable(&current))); break;
             default: {
                 fprintf(
@@ -569,7 +653,19 @@ Var_Data_Types parse_object_variable(Token **ref) {
             case TK_NIL: array_append(&var.object, create_variable_from_kind(current_location, VK_NIL, key_lhs, parse_nil_variable(&current))); break;
             case TK_LSQUARE: array_append(&var.object, create_variable_from_kind(current_location, VK_ARRAY, key_lhs, parse_array_variable(&current))); break;
             case TK_LBRACE: array_append(&var.object, create_variable_from_kind(current_location, VK_OBJECT, key_lhs, parse_object_variable(&current))); break;
-            case TK_PATH_ROOT: array_append(&var.object, create_variable_from_kind(current_location, VK_PATH, key_lhs, parse_path_variable( &current))); break;
+            case TK_PATH_ROOT: {
+                Var_Data_Types_Indentified path = parse_path_variable(&current);
+
+                switch (path.kind) {
+                    case VK_PATH: {
+                        array_append(&var.object, create_variable_from_kind(current_location, VK_PATH, key_lhs, path.as));
+                    } break;
+                    case VK_FUN_CALL: {
+                        array_append(&var.object, create_variable_from_kind(current_location, VK_FUN_CALL, key_lhs, path.as));
+                    } break;
+                    default: break;
+                }
+            } break;
             case TK_SYM: array_append(&var.object, create_variable_from_kind(current_location, VK_FUN_CALL, key_lhs, parse_fun_call_variable(&current))); break;
             default: {
                 fprintf(
@@ -623,7 +719,19 @@ Parser parse_tokens(Token *head) {
             case TK_NIL: array_append(&parser, create_variable_from_kind(current_location, VK_NIL, var_lhs, parse_nil_variable(&current))); break;
             case TK_LSQUARE: array_append(&parser, create_variable_from_kind(current_location, VK_ARRAY, var_lhs, parse_array_variable(&current))); break;
             case TK_LBRACE: array_append(&parser, create_variable_from_kind(current_location, VK_OBJECT, var_lhs, parse_object_variable(&current))); break;
-            case TK_PATH_ROOT: array_append(&parser, create_variable_from_kind(current_location, VK_PATH, var_lhs, parse_path_variable(&current))); break;
+            case TK_PATH_ROOT: {
+                Var_Data_Types_Indentified path = parse_path_variable(&current);
+
+                switch (path.kind) {
+                    case VK_PATH: {
+                        array_append(&parser, create_variable_from_kind(current_location, VK_PATH, var_lhs, path.as));
+                    } break;
+                    case VK_FUN_CALL: {
+                        array_append(&parser, create_variable_from_kind(current_location, VK_FUN_CALL, var_lhs, path.as));
+                    } break;
+                    default: break;
+                }
+            } break;
             case TK_SYM: array_append(&parser, create_variable_from_kind(current_location, VK_FUN_CALL, var_lhs, parse_fun_call_variable(&current))); break;
 
             default: {

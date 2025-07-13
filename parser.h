@@ -119,6 +119,12 @@ typedef union {
     Nil nil;
 } Var_Data_Types;
 
+typedef struct {
+    Var_Kind kind;
+
+    Var_Data_Types as;
+} Var_Data_Types_Indentified;
+
 struct Var {
     Var_Kind kind;
     // In this specific case, there is a new allocation, so be aware you need to free yourself

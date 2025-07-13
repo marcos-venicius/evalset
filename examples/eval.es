@@ -37,10 +37,16 @@ bills = [
   )
 ]
 
+#bills_item_one = $/bills[
+#
+#  "testing"
+#
+#]
+
 address = {
   city = "New York",
   state = "NY",
-  country = "USA",
+  "country" = "USA",
   "test it" = "testing",
   double_age = $/double_age,
   bills = {
@@ -50,4 +56,8 @@ address = {
 }
 
 bills_size = len($/bills)
+
+country_name = $/address["country"]
+test_it = $/address["bills"]
+items = $/test_it["items"]
 
