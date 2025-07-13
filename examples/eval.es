@@ -15,12 +15,8 @@ total = sum_i(
 )
 
 floats = sum_f(
-  0.100000,
-  0.200000,
-  sum_f(
-    3.141500,
-    sum_i(10, 10)
-  ),
+  0.100000, 0.200000,
+  sum_f(3.141500, sum_i(10, 10)),
   sum_i(100, -100)
 )
 
@@ -37,11 +33,7 @@ bills = [
   )
 ]
 
-#bills_item_one = $/bills[
-#
-#  "testing"
-#
-#]
+bills_item_one = $/bills[3]
 
 address = {
   city = "New York",
@@ -57,7 +49,10 @@ address = {
 
 bills_size = len($/bills)
 
+array = [$/address["bills"]]
+
 country_name = $/address["country"]
 test_it = $/address["bills"]
 items = $/test_it["items"]
+array_item_one = $/array[0]
 

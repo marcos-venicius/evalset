@@ -154,6 +154,37 @@ Symbol_Value __builtin_private_fun_call_get_object_index(Symbols symbols, Locati
     exit(1);
 }
 
+Symbol_Value __builtin_private_fun_call_get_array_index(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    Argument arg0 = fun_call->arguments.data[0];
+    Argument arg1 = fun_call->arguments.data[1];
+
+    Symbol_Value item = reduce_argument(symbols, arg0.loc, arg0);
+    Symbol_Value index = reduce_argument(symbols, arg1.loc, arg1);
+
+    if (index.kind == SK_INTEGER && item.kind != SK_ARRAY) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" You cannot index \033[1;35m%s\033[0m with \"%s\"\n",
+            LOC_ERROR_ARG(loc),
+            symbol_kind_name(item.kind),
+            index.as.string.value
+        );
+        exit(1);
+    }
+
+    if (index.as.integer.value < 0 || (size_t)index.as.integer.value >= item.as.array.length) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" index \033[1;35m%ld\033[0m is out of range\n",
+            LOC_ERROR_ARG(arg1.loc),
+            index.as.integer.value
+        );
+        exit(1);
+    }
+
+    return reduce_argument(symbols, loc, item.as.array.data[index.as.integer.value]);
+}
+
 long __bultin_fun_call_sum_ai(Symbols symbols, Location loc, Fun_Call *fun_call) {
     if (fun_call->arguments.length == 0) {
         fprintf(
@@ -593,6 +624,8 @@ Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_
         };
     } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_PRIVATE_FUN_GET_OBJECT_INDEX, strlen(BUILTIN_PRIVATE_FUN_GET_OBJECT_INDEX))) {
         return __builtin_private_fun_call_get_object_index(symbols, loc, fun_call);
+    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_PRIVATE_FUN_GET_ARRAY_INDEX, strlen(BUILTIN_PRIVATE_FUN_GET_ARRAY_INDEX))) {
+        return __builtin_private_fun_call_get_array_index(symbols, loc, fun_call);
     } else {
         fprintf(
             stderr,
