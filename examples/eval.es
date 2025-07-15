@@ -56,3 +56,6 @@ test_it = $/address["test it"]
 items = $/address["bills"]["items"]
 array_item_one = $/array[0]["items"][0]
 
+"This should be a valid variable" = ["Hello", "World"]
+
+"Getting index from string-name variable" = $/"This should be a valid variable"[0]

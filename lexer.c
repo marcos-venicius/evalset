@@ -327,9 +327,43 @@ static void lex_path_chunk(Lexer *lexer) {
 
     int path_size = 0;
 
-    while (is_symbol(chr(lexer))) {
-        ++path_size;
+    if (chr(lexer) == '"') {
         nchr(lexer);
+
+        bool lexing = true;
+
+        while (chr(lexer) != '"' && lexing) {
+            if (chr(lexer) == '\\') {
+                switch (pchr(lexer)) {
+                    case '"':
+                    case '\\':
+                    case 'n':
+                    case 't':
+                    case 'b':
+                    case 'r':
+                    case 'f':
+                        nchr(lexer);
+                        break;
+                    default:
+                        lexing = false;
+                        throw_error(invalid_escape_character_error, lexer);
+                        break;
+                }
+            } else if (chr(lexer) == '\n') {
+                throw_error(unterminated_string_error, lexer);
+                break;
+            }
+
+            ++path_size;
+            nchr(lexer);
+        }
+
+        nchr(lexer);
+    } else {
+        while (is_symbol(chr(lexer))) {
+            ++path_size;
+            nchr(lexer);
+        }
     }
 
     if (path_size == 0) {

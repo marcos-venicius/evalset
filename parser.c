@@ -409,10 +409,19 @@ Var_Data_Types_Indentified parse_path_variable(Token **ref) {
     while (current->kind == TK_PATH_CHUNK) {
         chunks++;
 
-        String string = copy_string_as_null_terminated((String){
-            .value = current->content,
-            .size = current->content_size
-        });
+        String string;
+
+        if (current->content[0] == '"') {
+            string = copy_string_as_null_terminated((String){
+                .value = current->content + 1,
+                .size = current->content_size - 2
+            });
+        } else {
+            string = copy_string_as_null_terminated((String){
+                .value = current->content,
+                .size = current->content_size
+            });
+        }
 
         array_append(&var.path, string);
 
