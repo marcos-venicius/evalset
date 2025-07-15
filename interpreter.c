@@ -63,6 +63,7 @@ typedef Map* Symbols;
 Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_call);
 void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array);
 Symbol interpret_var(Symbols symbols, Var var);
+Symbol_Value reduce_argument(Symbols symbols, Location loc, Argument arg);
 
 static long __builtin_iota_current_value = 0;
 
@@ -78,28 +79,102 @@ static const char *symbol_kind_name(Symbol_Kind kind) {
     }
 }
 
-Symbol_Value compute_variable_reference(Symbols symbols, Location loc, Path path) {
-    assertf(path.length == 1, "For now, path should only reference root items");
+Symbol_Value compute_variable_reference(Symbols symbols, Location loc, Path path, Metadata metadata) {
+    if (path.length != 1) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" invalid path reference",
+            LOC_ERROR_ARG(loc)
+        );
+        exit(1);
+    }
 
-    for (size_t i = 0; i < path.length; ++i) {
-        String chunk = path.data[i];
+    String chunk = path.data[0];
 
-        Symbol *symbol = map_get(symbols, chunk.value);
+    Symbol *symbol = map_get(symbols, chunk.value);
 
-        if (symbol == NULL) {
-            fprintf(
-                stderr,
-                LOC_ERROR_FMT" variable reference \033[1;35m%s\033[0m not found\n",
-                LOC_ERROR_ARG(loc),
-                chunk.value
-            );
-            exit(1);
-        }
-
-        return symbol->value;
+    if (symbol == NULL) {
+        fprintf(
+            stderr,
+            LOC_ERROR_FMT" variable reference \033[1;35m%s\033[0m not found\n",
+            LOC_ERROR_ARG(loc),
+            chunk.value
+        );
+        exit(1);
     }
     
-    assertf(false, "unreacheable");
+    Symbol_Value value = symbol->value;
+
+    for (size_t i = 0; i < metadata.indexes.length; ++i) {
+        Argument index = metadata.indexes.data[i];
+
+        switch (index.kind) {
+            case AK_INTEGER: {
+                if (value.kind != SK_ARRAY) {
+                    fprintf(
+                        stderr,
+                        LOC_ERROR_FMT" you cannot index a \033[1;35m%s\033[0m with an integer",
+                        LOC_ERROR_ARG(loc),
+                        symbol_kind_name(value.kind)
+                    );
+                    exit(1);
+                }
+
+                if (index.as.integer.value < 0 || (size_t)index.as.integer.value >= value.as.array.length) {
+                    fprintf(
+                        stderr,
+                        LOC_ERROR_FMT" index %ld out of range",
+                        LOC_ERROR_ARG(index.loc),
+                        index.as.integer.value
+                    );
+                    exit(1);
+                }
+
+                Argument new_value = value.as.array.data[index.as.integer.value];
+
+                value = reduce_argument(symbols, new_value.loc, new_value);
+            } break;
+            case AK_STRING: {
+                if (value.kind != SK_OBJECT) {
+                    fprintf(
+                        stderr,
+                        LOC_ERROR_FMT" You cannot index \033[1;35m%s\033[0m with \"%s\"\n",
+                        LOC_ERROR_ARG(loc),
+                        symbol_kind_name(value.kind),
+                        index.as.string.value
+                    );
+                    exit(1);
+                }
+
+                bool found = false;
+
+                // TODO: change object to a map
+                for (size_t i = 0; i < value.as.object.length; ++i) {
+                    Var var = value.as.object.data[i];
+
+                    if (cmp_sized_strings(var.name.value, var.name.size, index.as.string.value, index.as.string.size)) {
+                        found = true;
+                        value = interpret_var(symbols, var).value;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    fprintf(
+                        stderr,
+                        LOC_ERROR_FMT" key \"\033[1;35m%s\033[0m\" not found\n",
+                        LOC_ERROR_ARG(loc),
+                        index.as.string.value
+                    );
+
+                    exit(1);
+                }
+            } break;
+            default: break;
+        }
+    }
+
+    return value;
 }
 
 Symbol_Value reduce_argument(Symbols symbols, Location loc, Argument arg) {
@@ -111,7 +186,7 @@ Symbol_Value reduce_argument(Symbols symbols, Location loc, Argument arg) {
         case AK_BOOLEAN: return (Symbol_Value){.kind = SK_BOOLEAN, .as.boolean = arg.as.boolean};
         case AK_OBJECT: return (Symbol_Value){.kind = SK_OBJECT, .as.object = arg.as.object};
         case AK_ARRAY: return (Symbol_Value){.kind = SK_ARRAY, .as.array = arg.as.array};
-        case AK_PATH: return compute_variable_reference(symbols, loc, arg.as.path);
+        case AK_PATH: return compute_variable_reference(symbols, loc, arg.as.path, arg.metadata);
         case AK_FUN_CALL: return eval_builtin_fun_call(symbols, loc, arg.as.fun_call);
         default: assertf(false, "unreacheable");
     }
@@ -705,7 +780,7 @@ Symbol interpret_var(Symbols symbols, Var var) {
         case VK_FLOAT: { symbol.value.kind = SK_FLOAT; symbol.value.as.floating = var.as.floating; } break;
         case VK_BOOLEAN: { symbol.value.kind = SK_BOOLEAN; symbol.value.as.boolean = var.as.boolean; } break;
         case VK_PATH: {
-            symbol.value = compute_variable_reference(symbols, var.loc, var.as.path);
+            symbol.value = compute_variable_reference(symbols, var.loc, var.as.path, var.metadata);
         } break;
         case VK_FUN_CALL: {
             symbol.value = eval_builtin_fun_call(symbols, var.loc, var.as.fun_call);

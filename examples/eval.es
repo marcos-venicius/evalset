@@ -52,7 +52,7 @@ bills_size = len($/bills)
 array = [$/address["bills"]]
 
 country_name = $/address["country"]
-test_it = $/address["bills"]
-items = $/test_it["items"]
-array_item_one = $/array[0]
+test_it = $/address["test it"]
+items = $/address["bills"]["items"]
+array_item_one = $/array[0]["items"][0]
 

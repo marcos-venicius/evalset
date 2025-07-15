@@ -5,6 +5,7 @@
 #include "./lexer.h"
 
 #define DEFAULT_ARRAY_CAPACITY 100
+#define EMPTY_METADATA (Metadata){0}
 
 typedef struct Var Var;
 typedef struct Fun_Call Fun_Call;
@@ -78,6 +79,10 @@ typedef struct {
 
 typedef void* Nil;
 
+typedef struct {
+    Array indexes;
+} Metadata;
+
 typedef union {
     Integer integer;
     String string;
@@ -95,6 +100,8 @@ struct Argument {
     Location loc;
 
     Argument_Data_Types as;
+
+    Metadata metadata;
 };
 
 struct Fun_Call {
@@ -123,6 +130,8 @@ typedef struct {
     Var_Kind kind;
 
     Var_Data_Types as;
+
+    Metadata metadata;
 } Var_Data_Types_Indentified;
 
 struct Var {
@@ -133,6 +142,8 @@ struct Var {
     Location loc;
 
     Var_Data_Types as;
+
+    Metadata metadata;
 };
 
 typedef struct {
