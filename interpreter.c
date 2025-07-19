@@ -20,9 +20,6 @@
 #define BUILTIN_FUN_KEYS "keys"
 #define BUILTIN_FUN_IOTA "iota"
 
-#define BUILTIN_PRIVATE_FUN_GET_OBJECT_INDEX "##get_object_index"
-#define BUILTIN_PRIVATE_FUN_GET_ARRAY_INDEX "##get_array_index"
-
 typedef enum {
     SK_NIL = 0,
     SK_INTEGER,
@@ -63,7 +60,7 @@ typedef Map* Symbols;
 Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_call);
 void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array);
 Symbol interpret_var(Symbols symbols, Var var);
-Symbol_Value reduce_argument(Symbols symbols, Location loc, Argument arg);
+Symbol_Value reduce_argument(Symbols symbols, Argument arg);
 
 static long __builtin_iota_current_value = 0;
 
@@ -77,6 +74,81 @@ static const char *symbol_kind_name(Symbol_Kind kind) {
         case SK_ARRAY: return "array";
         default: return "unknown";
     }
+}
+
+Symbol_Value compute_indexing(Symbols symbols, Metadata metadata, Symbol_Value initial) {
+    Symbol_Value value = initial;
+
+    for (size_t i = 0; i < metadata.indexes.length; ++i) {
+        Argument index = metadata.indexes.data[i];
+
+        switch (index.kind) {
+            case AK_INTEGER: {
+                if (value.kind != SK_ARRAY) {
+                    fprintf(
+                        stderr,
+                        LOC_ERROR_FMT" you cannot index a \033[1;35m%s\033[0m with an integer",
+                        LOC_ERROR_ARG(index.loc),
+                        symbol_kind_name(value.kind)
+                    );
+                    exit(1);
+                }
+
+                if (index.as.integer.value < 0 || (size_t)index.as.integer.value >= value.as.array.length) {
+                    fprintf(
+                        stderr,
+                        LOC_ERROR_FMT" index %ld out of range\n",
+                        LOC_ERROR_ARG(index.loc),
+                        index.as.integer.value
+                    );
+                    exit(1);
+                }
+
+                Argument new_value = value.as.array.data[index.as.integer.value];
+
+                value = reduce_argument(symbols, new_value);
+            } break;
+            case AK_STRING: {
+                if (value.kind != SK_OBJECT) {
+                    fprintf(
+                        stderr,
+                        LOC_ERROR_FMT" You cannot index \033[1;35m%s\033[0m with \"%s\"\n",
+                        LOC_ERROR_ARG(index.loc),
+                        symbol_kind_name(value.kind),
+                        index.as.string.value
+                    );
+                    exit(1);
+                }
+
+                bool found = false;
+
+                // TODO: change object to a map
+                for (size_t i = 0; i < value.as.object.length; ++i) {
+                    Var var = value.as.object.data[i];
+
+                    if (cmp_sized_strings(var.name.value, var.name.size, index.as.string.value, index.as.string.size)) {
+                        found = true;
+                        value = interpret_var(symbols, var).value;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    fprintf(
+                        stderr,
+                        LOC_ERROR_FMT" key \"\033[1;35m%s\033[0m\" not found\n",
+                        LOC_ERROR_ARG(index.loc),
+                        index.as.string.value
+                    );
+
+                    exit(1);
+                }
+            } break;
+            default: break;
+        }
+    }
+
+    return value;
 }
 
 Symbol_Value compute_variable_reference(Symbols symbols, Location loc, Path path, Metadata metadata) {
@@ -103,161 +175,22 @@ Symbol_Value compute_variable_reference(Symbols symbols, Location loc, Path path
         exit(1);
     }
     
-    Symbol_Value value = symbol->value;
-
-    for (size_t i = 0; i < metadata.indexes.length; ++i) {
-        Argument index = metadata.indexes.data[i];
-
-        switch (index.kind) {
-            case AK_INTEGER: {
-                if (value.kind != SK_ARRAY) {
-                    fprintf(
-                        stderr,
-                        LOC_ERROR_FMT" you cannot index a \033[1;35m%s\033[0m with an integer",
-                        LOC_ERROR_ARG(loc),
-                        symbol_kind_name(value.kind)
-                    );
-                    exit(1);
-                }
-
-                if (index.as.integer.value < 0 || (size_t)index.as.integer.value >= value.as.array.length) {
-                    fprintf(
-                        stderr,
-                        LOC_ERROR_FMT" index %ld out of range",
-                        LOC_ERROR_ARG(index.loc),
-                        index.as.integer.value
-                    );
-                    exit(1);
-                }
-
-                Argument new_value = value.as.array.data[index.as.integer.value];
-
-                value = reduce_argument(symbols, new_value.loc, new_value);
-            } break;
-            case AK_STRING: {
-                if (value.kind != SK_OBJECT) {
-                    fprintf(
-                        stderr,
-                        LOC_ERROR_FMT" You cannot index \033[1;35m%s\033[0m with \"%s\"\n",
-                        LOC_ERROR_ARG(loc),
-                        symbol_kind_name(value.kind),
-                        index.as.string.value
-                    );
-                    exit(1);
-                }
-
-                bool found = false;
-
-                // TODO: change object to a map
-                for (size_t i = 0; i < value.as.object.length; ++i) {
-                    Var var = value.as.object.data[i];
-
-                    if (cmp_sized_strings(var.name.value, var.name.size, index.as.string.value, index.as.string.size)) {
-                        found = true;
-                        value = interpret_var(symbols, var).value;
-                        break;
-                    }
-                }
-
-                if (!found) {
-                    fprintf(
-                        stderr,
-                        LOC_ERROR_FMT" key \"\033[1;35m%s\033[0m\" not found\n",
-                        LOC_ERROR_ARG(loc),
-                        index.as.string.value
-                    );
-
-                    exit(1);
-                }
-            } break;
-            default: break;
-        }
-    }
-
-    return value;
+    return compute_indexing(symbols, metadata, symbol->value);
 }
 
-Symbol_Value reduce_argument(Symbols symbols, Location loc, Argument arg) {
+Symbol_Value reduce_argument(Symbols symbols, Argument arg) {
     switch (arg.kind) {
         case AK_NIL: return (Symbol_Value){.kind = SK_NIL};
         case AK_INTEGER: return (Symbol_Value){.kind = SK_INTEGER, .as.integer = arg.as.integer};
         case AK_STRING: return (Symbol_Value){.kind = SK_STRING, .as.string = arg.as.string};
         case AK_FLOAT: return (Symbol_Value){.kind = SK_FLOAT, .as.floating = arg.as.floating};
         case AK_BOOLEAN: return (Symbol_Value){.kind = SK_BOOLEAN, .as.boolean = arg.as.boolean};
-        case AK_OBJECT: return (Symbol_Value){.kind = SK_OBJECT, .as.object = arg.as.object};
-        case AK_ARRAY: return (Symbol_Value){.kind = SK_ARRAY, .as.array = arg.as.array};
-        case AK_PATH: return compute_variable_reference(symbols, loc, arg.as.path, arg.metadata);
-        case AK_FUN_CALL: return eval_builtin_fun_call(symbols, loc, arg.as.fun_call);
+        case AK_OBJECT: return compute_indexing(symbols, arg.metadata, (Symbol_Value){.kind = SK_OBJECT, .as.object = arg.as.object});
+        case AK_ARRAY: return compute_indexing(symbols, arg.metadata, (Symbol_Value){.kind = SK_ARRAY, .as.array = arg.as.array});
+        case AK_PATH: return compute_variable_reference(symbols, arg.loc, arg.as.path, arg.metadata);
+        case AK_FUN_CALL: return compute_indexing(symbols, arg.metadata, eval_builtin_fun_call(symbols, arg.loc, arg.as.fun_call));
         default: assertf(false, "unreacheable");
     }
-}
-
-Symbol_Value __builtin_private_fun_call_get_object_index(Symbols symbols, Location loc, Fun_Call *fun_call) {
-    Argument arg0 = fun_call->arguments.data[0];
-    Argument arg1 = fun_call->arguments.data[1];
-
-    Symbol_Value item = reduce_argument(symbols, arg0.loc, arg0);
-    Symbol_Value index = reduce_argument(symbols, arg1.loc, arg1);
-
-    if (index.kind == SK_STRING && item.kind != SK_OBJECT) {
-        fprintf(
-            stderr,
-            LOC_ERROR_FMT" You cannot index \033[1;35m%s\033[0m with \"%s\"\n",
-            LOC_ERROR_ARG(loc),
-            symbol_kind_name(item.kind),
-            index.as.string.value
-        );
-        exit(1);
-    }
-
-    // TODO: change object to a map
-    for (size_t i = 0; i < item.as.object.length; ++i) {
-        Var var = item.as.object.data[i];
-
-        if (cmp_sized_strings(var.name.value, var.name.size, index.as.string.value, index.as.string.size)) {
-            return interpret_var(symbols, var).value;
-        }
-    }
-
-    fprintf(
-        stderr,
-        LOC_ERROR_FMT" key \"\033[1;35m%s\033[0m\" not found\n",
-        LOC_ERROR_ARG(loc),
-        index.as.string.value
-    );
-
-    exit(1);
-}
-
-Symbol_Value __builtin_private_fun_call_get_array_index(Symbols symbols, Location loc, Fun_Call *fun_call) {
-    Argument arg0 = fun_call->arguments.data[0];
-    Argument arg1 = fun_call->arguments.data[1];
-
-    Symbol_Value item = reduce_argument(symbols, arg0.loc, arg0);
-    Symbol_Value index = reduce_argument(symbols, arg1.loc, arg1);
-
-    if (index.kind == SK_INTEGER && item.kind != SK_ARRAY) {
-        fprintf(
-            stderr,
-            LOC_ERROR_FMT" You cannot index \033[1;35m%s\033[0m with \"%s\"\n",
-            LOC_ERROR_ARG(loc),
-            symbol_kind_name(item.kind),
-            index.as.string.value
-        );
-        exit(1);
-    }
-
-    if (index.as.integer.value < 0 || (size_t)index.as.integer.value >= item.as.array.length) {
-        fprintf(
-            stderr,
-            LOC_ERROR_FMT" index \033[1;35m%ld\033[0m is out of range\n",
-            LOC_ERROR_ARG(arg1.loc),
-            index.as.integer.value
-        );
-        exit(1);
-    }
-
-    return reduce_argument(symbols, loc, item.as.array.data[index.as.integer.value]);
 }
 
 long __bultin_fun_call_sum_ai(Symbols symbols, Location loc, Fun_Call *fun_call) {
@@ -279,7 +212,7 @@ long __bultin_fun_call_sum_ai(Symbols symbols, Location loc, Fun_Call *fun_call)
         exit(1);
     }
 
-    Symbol_Value sym = reduce_argument(symbols, fun_call->arguments.data[0].loc, fun_call->arguments.data[0]);
+    Symbol_Value sym = reduce_argument(symbols, fun_call->arguments.data[0]);
 
     if (sym.kind != SK_ARRAY) {
         fprintf(
@@ -295,7 +228,7 @@ long __bultin_fun_call_sum_ai(Symbols symbols, Location loc, Fun_Call *fun_call)
 
     for (size_t i = 0; i < sym.as.array.length; ++i) {
         Argument arg = sym.as.array.data[i];
-        Symbol_Value value = reduce_argument(symbols, arg.loc, arg);
+        Symbol_Value value = reduce_argument(symbols, arg);
 
         if (value.kind != SK_INTEGER) {
             fprintf(
@@ -333,7 +266,7 @@ double __bultin_fun_call_sum_af(Symbols symbols, Location loc, Fun_Call *fun_cal
         exit(1);
     }
 
-    Symbol_Value sym = reduce_argument(symbols, fun_call->arguments.data[0].loc, fun_call->arguments.data[0]);
+    Symbol_Value sym = reduce_argument(symbols, fun_call->arguments.data[0]);
 
     if (sym.kind != SK_ARRAY) {
         fprintf(
@@ -349,7 +282,7 @@ double __bultin_fun_call_sum_af(Symbols symbols, Location loc, Fun_Call *fun_cal
 
     for (size_t i = 0; i < sym.as.array.length; ++i) {
         Argument arg = sym.as.array.data[i];
-        Symbol_Value value = reduce_argument(symbols, arg.loc, arg);
+        Symbol_Value value = reduce_argument(symbols, arg);
 
         switch (value.kind) {
             case SK_FLOAT: sum += value.as.floating.value; break;
@@ -377,7 +310,7 @@ Array __bultin_fun_call_concat_a(Symbols symbols, Location loc, Fun_Call *fun_ca
 
     for (size_t argument_index = 0; argument_index < fun_call->arguments.length; ++argument_index) {
         Argument arg_a = fun_call->arguments.data[argument_index];
-        Symbol_Value arr = reduce_argument(symbols, arg_a.loc, arg_a);
+        Symbol_Value arr = reduce_argument(symbols, arg_a);
 
         if (arr.kind != SK_ARRAY) {
             fprintf(
@@ -404,7 +337,7 @@ String __bultin_fun_call_concat_s(Symbols symbols, Location loc, Fun_Call *fun_c
 
     for (size_t argument_index = 0; argument_index < fun_call->arguments.length; ++argument_index) {
         Argument arg = fun_call->arguments.data[argument_index];
-        Symbol_Value value = reduce_argument(symbols, arg.loc, arg);
+        Symbol_Value value = reduce_argument(symbols, arg);
 
         if (value.kind != SK_STRING) {
             fprintf(
@@ -442,7 +375,7 @@ String __bultin_fun_call_join_as(Symbols symbols, Location loc, Fun_Call *fun_ca
     size_t string_size = 1;
 
     Argument arg1 = fun_call->arguments.data[0];
-    Symbol_Value strings = reduce_argument(symbols, loc, arg1);
+    Symbol_Value strings = reduce_argument(symbols, arg1);
 
     if (strings.kind != SK_ARRAY) {
         fprintf(
@@ -455,7 +388,7 @@ String __bultin_fun_call_join_as(Symbols symbols, Location loc, Fun_Call *fun_ca
     }
 
     Argument arg2 = fun_call->arguments.data[1];
-    Symbol_Value separator = reduce_argument(symbols, loc, arg2);
+    Symbol_Value separator = reduce_argument(symbols, arg2);
 
     if (separator.kind != SK_STRING && separator.kind != SK_NIL) {
         fprintf(
@@ -469,7 +402,7 @@ String __bultin_fun_call_join_as(Symbols symbols, Location loc, Fun_Call *fun_ca
 
     for (size_t i = 0; i < strings.as.array.length; ++i) {
         Argument arg = strings.as.array.data[i];
-        Symbol_Value value = reduce_argument(symbols, arg.loc, arg);
+        Symbol_Value value = reduce_argument(symbols, arg);
 
         if (value.kind != SK_STRING) {
             fprintf(
@@ -511,7 +444,7 @@ Array __bultin_fun_call_keys(Symbols symbols, Location loc, Fun_Call *fun_call) 
     }
 
     Argument arg = fun_call->arguments.data[0];
-    Symbol_Value value = reduce_argument(symbols, arg.loc, arg);
+    Symbol_Value value = reduce_argument(symbols, arg);
 
     if (value.kind != SK_OBJECT) {
         fprintf(
@@ -550,7 +483,7 @@ long __bultin_fun_call_len(Symbols symbols, Location loc, Fun_Call *fun_call) {
         exit(1);
     }
 
-    Symbol_Value sym = reduce_argument(symbols, fun_call->arguments.data[0].loc, fun_call->arguments.data[0]);
+    Symbol_Value sym = reduce_argument(symbols, fun_call->arguments.data[0]);
 
     switch (sym.kind) {
         case SK_ARRAY: return sym.as.array.length;
@@ -582,7 +515,7 @@ long __bultin_fun_call_sum_i(Symbols symbols, Location loc, Fun_Call *fun_call) 
 
             Argument argument = fun_call->arguments.data[i];
 
-            Symbol_Value value = reduce_argument(symbols, loc, argument);
+            Symbol_Value value = reduce_argument(symbols, argument);
 
             switch (value.kind) {
                 case SK_INTEGER: sum += value.as.integer.value; break;
@@ -609,7 +542,7 @@ double __bultin_fun_call_sum_f(Symbols symbols, Location loc, Fun_Call *fun_call
 
     for (size_t i = 0; i < fun_call->arguments.length; ++i) {
         Argument argument = fun_call->arguments.data[i];
-        Symbol_Value value = reduce_argument(symbols, loc, argument);
+        Symbol_Value value = reduce_argument(symbols, argument);
 
         switch (value.kind) {
             case SK_INTEGER: sum += value.as.integer.value; break;
@@ -697,10 +630,6 @@ Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_
             .kind = SK_INTEGER,
             .as.integer.value = __bultin_fun_call_iota(symbols, loc, fun_call),
         };
-    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_PRIVATE_FUN_GET_OBJECT_INDEX, strlen(BUILTIN_PRIVATE_FUN_GET_OBJECT_INDEX))) {
-        return __builtin_private_fun_call_get_object_index(symbols, loc, fun_call);
-    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_PRIVATE_FUN_GET_ARRAY_INDEX, strlen(BUILTIN_PRIVATE_FUN_GET_ARRAY_INDEX))) {
-        return __builtin_private_fun_call_get_array_index(symbols, loc, fun_call);
     } else {
         fprintf(
             stderr,
@@ -737,7 +666,7 @@ void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array) {
             printf("[");
             for (size_t i = 0; i < symbol.value.as.array.length; ++i) {
                 Argument arg = symbol.value.as.array.data[i];
-                Symbol_Value reduced_value = reduce_argument(*symbols, arg.loc, arg);
+                Symbol_Value reduced_value = reduce_argument(*symbols, arg);
 
                 if (i > 0) printf(", ");
                 print_symbol(symbols, (Symbol){.value = reduced_value}, true);
@@ -794,6 +723,15 @@ Symbol interpret_var(Symbols symbols, Var var) {
             symbol.value.as.object = var.as.object;
         } break;
         default: assert(0 && "kind not evaluated yet");
+    }
+
+    switch (var.kind) {
+        case VK_FUN_CALL:
+        case VK_ARRAY:
+        case VK_OBJECT: {
+            symbol.value = compute_indexing(symbols, var.metadata, symbol.value);
+        } break;
+        default: break;
     }
 
     return symbol;

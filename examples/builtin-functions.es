@@ -15,12 +15,12 @@ sum_af = sum_af([3.14, 0.1, 0.2])
 # `[]any concat_a([]any...)`, receive N `arrays` as argument and return all arrays concatenated.
 
 array_a = [3.14, 0.1, 0.2]
-array_b = [10, 30, 50]
+array_b = [10, 30, 50, 100]
 
 concat_a = concat_a(
 	$/array_a,
-	$/array_b,
-	concat_a(["Hello"], ["World"])
+	[$/array_b[2]],
+	[concat_a(["Hello"], ["World"])[0], "testing"]
 )
 
 # `string concat_s(string...)`, receive N `strings` as argument and return a single string concatenated.

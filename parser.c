@@ -457,7 +457,7 @@ Var_Data_Types_Indentified parse_path_variable(Token **ref) {
     };
 }
 
-Var_Data_Types parse_fun_call_variable(Token **ref) {
+Var_Data_Types_Indentified parse_fun_call_variable(Token **ref) {
     Location fun_call_location = (*ref)->loc;
 
     Token *fun_name = *ref;
@@ -466,11 +466,12 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
 
     (void)expect_kind(ref, TK_LPAREN); // consume '('
 
-    Var_Data_Types var = {
-        .fun_call = calloc(1, sizeof(Fun_Call)),
+    Var_Data_Types_Indentified var = {
+        .kind = VK_FUN_CALL,
+        .as.fun_call = calloc(1, sizeof(Fun_Call)),
     };
 
-    var.fun_call->name = copy_string_as_null_terminated((String){
+    var.as.fun_call->name = copy_string_as_null_terminated((String){
         .value = fun_name->content,
         .size = fun_name->content_size
     });
@@ -529,8 +530,8 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
                     }
                 } break;
                 case TK_SYM: {
-                    Var_Data_Types fun_call = parse_fun_call_variable(&current);
-                    argument = create_argument_from_kind(current_location, VK_FUN_CALL, fun_call, EMPTY_METADATA);
+                    Var_Data_Types_Indentified var = parse_fun_call_variable(&current);
+                    argument = create_argument_from_kind(current_location, VK_FUN_CALL, var.as, var.metadata);
                 } break;
                 default: {
                     fprintf(
@@ -545,7 +546,7 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
                 }
             }
 
-            array_append(&var.fun_call->arguments, argument);
+            array_append(&var.as.fun_call->arguments, argument);
 
             if (current->kind == TK_COMMA) current = current->next;
         }
@@ -556,6 +557,8 @@ Var_Data_Types parse_fun_call_variable(Token **ref) {
     current_location = fun_call_location;
 
     expect_kind(ref, TK_RPAREN); // consume ')'
+    
+    var.metadata.indexes = parse_indexes(ref);;
 
     return var;
 }
@@ -603,7 +606,11 @@ Var_Data_Types parse_array_variable(Token **ref) {
                     default: break;
                 }
             } break;
-            case TK_SYM: array_append(&var.array, create_argument_from_kind(current_location, VK_FUN_CALL, parse_fun_call_variable(&current), EMPTY_METADATA)); break;
+            case TK_SYM: {
+                Var_Data_Types_Indentified fun_call = parse_fun_call_variable(&current);
+
+                array_append(&var.array, create_argument_from_kind(current_location, VK_FUN_CALL, fun_call.as, fun_call.metadata));
+            } break;
             default: {
                 fprintf(
                     stderr,
@@ -676,7 +683,11 @@ Var_Data_Types parse_object_variable(Token **ref) {
                     default: break;
                 }
             } break;
-            case TK_SYM: array_append(&var.object, create_variable_from_kind(current_location, VK_FUN_CALL, key_lhs, parse_fun_call_variable(&current), EMPTY_METADATA)); break;
+            case TK_SYM: {
+                Var_Data_Types_Indentified fun_call = parse_fun_call_variable(&current);
+
+                array_append(&var.object, create_variable_from_kind(current_location, VK_FUN_CALL, key_lhs, fun_call.as, fun_call.metadata));
+            } break;
             default: {
                 fprintf(
                     stderr,
@@ -742,8 +753,11 @@ Parser parse_tokens(Token *head) {
                     default: break;
                 }
             } break;
-            case TK_SYM: array_append(&parser, create_variable_from_kind(current_location, VK_FUN_CALL, var_lhs, parse_fun_call_variable(&current), EMPTY_METADATA)); break;
+            case TK_SYM: {
+                Var_Data_Types_Indentified fun_call = parse_fun_call_variable(&current);
 
+                array_append(&parser, create_variable_from_kind(current_location, VK_FUN_CALL, var_lhs, fun_call.as, fun_call.metadata));
+            } break;
             default: {
                 fprintf(
                     stderr,

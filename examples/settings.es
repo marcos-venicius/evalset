@@ -1,6 +1,6 @@
 id = iota() # Some kind of sequential id generator like in golang
-anything = hash("name", 10, 10.5, nil, true, false)
-result = concat_arrays(
+anything = concat_a(["name", 10, 10.5, nil, true, false])
+result = concat_a(
   [1, 2, 3]
   [4 ,5, 6]
   [
@@ -11,7 +11,7 @@ result = concat_arrays(
     ]
   ]
 )
-keys = object_keys({
+keys = keys({
   foo = 10
   bar = 30
   baz = "Hello Guys"
@@ -21,26 +21,26 @@ keys = object_keys({
     }
   ]
 })
-adding = sqrt(20)
-multiplying = mul(10, 50)
-subtracting = sub(100, 30)
-adding = add(20, 40, 10, 60)
-sum_of_all = sum($/adding, $/multiplying, $/subtracting)
+# adding = sqrt(20)
+# multiplying = mul(10, 50)
+# subtracting = sub(100, 30)
+# adding = add(20, 40, 10, 60)
+# sum_of_all = sum($/adding, $/multiplying, $/subtracting)
 
 # 2 + (3 * 2)
-expr = sum(2, mul(3, 2, sum_array(concat([20, 30], [4, 8.7]))))
+expr = sum_f(2, sum_f(3, 2, sum_af(concat_a([20, 30], [4, 8.7]))))
 
 permissions = {
   default = ["user:read" "user:write"]
   admin = ["user:read" "user:write" "repository:read" "repository:write"]
-  test = hello()
-  testing = hello(10, 20, ["hello" "world"])
+  test = iota()
+  testing = iota()
 }
 
-default_permissions = $/permissions/default
-admin_permissions = $/permissions/admin
+default_permissions = $/permissions["default"]
+admin_permissions = $/permissions["admin"]
 
-empty_array = [mul(10, 10)]
+empty_array = [sum_i(10, 10)]
 empty_object = {}
 
 matrix = [
@@ -62,7 +62,6 @@ matrix = [
         obj = {
           "What?" = "Hey"
         }
-        path = $/helo
       }
       {}
     ]
@@ -73,10 +72,10 @@ pages = [
   {
     route = "/user"
     permissions = [
-      $/permissions/default
-      $/permissions/admin
+      $/permissions["default"]
+      $/permissions["admin"]
     ]
-    test = $/permissions/admin
+    test = $/permissions["admin"]
   }
 ]
 
