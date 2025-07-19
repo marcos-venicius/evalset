@@ -19,7 +19,7 @@ array_b = [10, 30, 50, 100]
 
 concat_a = concat_a(
 	$/array_a,
-	[$/array_b[2]],
+	[$/array_b[len($/array_a)]],
 	[concat_a(["Hello"], ["World"])[0], "testing"]
 )
 

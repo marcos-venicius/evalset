@@ -80,15 +80,16 @@ Symbol_Value compute_indexing(Symbols symbols, Metadata metadata, Symbol_Value i
     Symbol_Value value = initial;
 
     for (size_t i = 0; i < metadata.indexes.length; ++i) {
-        Argument index = metadata.indexes.data[i];
+        Argument arg = metadata.indexes.data[i];
+        Symbol_Value index = reduce_argument(symbols, metadata.indexes.data[i]);
 
         switch (index.kind) {
-            case AK_INTEGER: {
+            case SK_INTEGER: {
                 if (value.kind != SK_ARRAY) {
                     fprintf(
                         stderr,
                         LOC_ERROR_FMT" you cannot index a \033[1;35m%s\033[0m with an integer",
-                        LOC_ERROR_ARG(index.loc),
+                        LOC_ERROR_ARG(arg.loc),
                         symbol_kind_name(value.kind)
                     );
                     exit(1);
@@ -98,7 +99,7 @@ Symbol_Value compute_indexing(Symbols symbols, Metadata metadata, Symbol_Value i
                     fprintf(
                         stderr,
                         LOC_ERROR_FMT" index %ld out of range\n",
-                        LOC_ERROR_ARG(index.loc),
+                        LOC_ERROR_ARG(arg.loc),
                         index.as.integer.value
                     );
                     exit(1);
@@ -108,12 +109,12 @@ Symbol_Value compute_indexing(Symbols symbols, Metadata metadata, Symbol_Value i
 
                 value = reduce_argument(symbols, new_value);
             } break;
-            case AK_STRING: {
+            case SK_STRING: {
                 if (value.kind != SK_OBJECT) {
                     fprintf(
                         stderr,
                         LOC_ERROR_FMT" You cannot index \033[1;35m%s\033[0m with \"%s\"\n",
-                        LOC_ERROR_ARG(index.loc),
+                        LOC_ERROR_ARG(arg.loc),
                         symbol_kind_name(value.kind),
                         index.as.string.value
                     );
@@ -137,7 +138,7 @@ Symbol_Value compute_indexing(Symbols symbols, Metadata metadata, Symbol_Value i
                     fprintf(
                         stderr,
                         LOC_ERROR_FMT" key \"\033[1;35m%s\033[0m\" not found\n",
-                        LOC_ERROR_ARG(index.loc),
+                        LOC_ERROR_ARG(arg.loc),
                         index.as.string.value
                     );
 
