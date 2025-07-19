@@ -145,7 +145,15 @@ Symbol_Value compute_indexing(Symbols symbols, Metadata metadata, Symbol_Value i
                     exit(1);
                 }
             } break;
-            default: break;
+            default: {
+                fprintf(
+                    stderr,
+                    LOC_ERROR_FMT" Invalid index value of kind \033[1;35m%s\033[0m\n",
+                    LOC_ERROR_ARG(arg.loc),
+                    symbol_kind_name(value.kind)
+                );
+                exit(1);
+            } break;
         }
     }
 
