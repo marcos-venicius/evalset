@@ -327,15 +327,50 @@ static void lex_path_chunk(Lexer *lexer) {
 
     int path_size = 0;
 
-    while (is_symbol(chr(lexer))) {
-        ++path_size;
+    if (chr(lexer) == '"') {
         nchr(lexer);
+
+        bool lexing = true;
+
+        while (chr(lexer) != '"' && lexing) {
+            if (chr(lexer) == '\\') {
+                switch (pchr(lexer)) {
+                    case '"':
+                    case '\\':
+                    case 'n':
+                    case 't':
+                    case 'b':
+                    case 'r':
+                    case 'f':
+                        nchr(lexer);
+                        break;
+                    default:
+                        lexing = false;
+                        throw_error(invalid_escape_character_error, lexer);
+                        break;
+                }
+            } else if (chr(lexer) == '\n') {
+                throw_error(unterminated_string_error, lexer);
+                break;
+            }
+
+            ++path_size;
+            nchr(lexer);
+        }
+
+        nchr(lexer);
+    } else {
+        while (is_symbol(chr(lexer))) {
+            ++path_size;
+            nchr(lexer);
+        }
     }
 
     if (path_size == 0) {
-        // throw_error(invalid_path_chunk_error, lexer);
         save_token(lexer, TK_SLASH);
     } else {
+        lexer->bot++;
+
         save_token(lexer, TK_PATH_CHUNK);
     }
 }
@@ -397,7 +432,6 @@ static void lex_number(Lexer *lexer) {
     }
 
     if (digits_count == 0) {
-        // throw_error(invalid_number_error, lexer);
         save_token(lexer, TK_MINUS);
     } else {
         digits_count = 0;
@@ -474,6 +508,8 @@ Token *lex(Lexer *lexer) {
                     lex_number(lexer);
                 } else {
                     throw_error(unrecognized_char_error, lexer);
+
+                    nchr(lexer);
                 }
             } break;
         }

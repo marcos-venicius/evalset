@@ -5,6 +5,7 @@
 #include "./lexer.h"
 
 #define DEFAULT_ARRAY_CAPACITY 100
+#define EMPTY_METADATA (Metadata){0}
 
 typedef struct Var Var;
 typedef struct Fun_Call Fun_Call;
@@ -72,10 +73,15 @@ typedef struct {
 typedef struct {
     size_t capacity;
     size_t length;
+    // Each string in this path have a new allocation, free it yourself
     String *data;
 } Path;
 
 typedef void* Nil;
+
+typedef struct {
+    Array indexes;
+} Metadata;
 
 typedef union {
     Integer integer;
@@ -91,7 +97,11 @@ typedef union {
 struct Argument {
     Argument_Kind kind;
 
+    Location loc;
+
     Argument_Data_Types as;
+
+    Metadata metadata;
 };
 
 struct Fun_Call {
@@ -116,11 +126,24 @@ typedef union {
     Nil nil;
 } Var_Data_Types;
 
-struct Var {
+typedef struct {
     Var_Kind kind;
-    String name;
 
     Var_Data_Types as;
+
+    Metadata metadata;
+} Var_Data_Types_Indentified;
+
+struct Var {
+    Var_Kind kind;
+    // In this specific case, there is a new allocation, so be aware you need to free yourself
+    String name;
+
+    Location loc;
+
+    Var_Data_Types as;
+
+    Metadata metadata;
 };
 
 typedef struct {
@@ -153,5 +176,6 @@ typedef struct {
 Parser parse_tokens(Token *head);
 void parser_free(Parser parser);
 const char *var_kind_name(Var_Kind var_kind);
+const char *argument_kind_name(Argument_Kind kind);
 
 #endif // PARSER_H_
