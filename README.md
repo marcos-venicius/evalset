@@ -95,6 +95,26 @@ One of the thougts is to have a possibility to convert the `evalset` to json for
 - Object
 - Paths ($/[a-zA-Z_])
 
+## To implement
+
+I think the API to this language in C should work in a very special way.
+
+So, we'll have a function, maybe called `evalset_get` which returns a "generic type".
+
+Basically this will return the primitive types already evaluated like: int, nil, array, object, etc.
+
+So, this function will expect an instance of the evalset and a string as second parameter.
+
+The second parameter should basically accept an evalset syntax, which you will be able to reference variables, get indexes call builtin functions and all of it.
+
+But, it'll not have the possibility to create variables, only to do some work upon all of them.
+
+If you look carefully to the code, the file itself is an object of many keys, so you will be able to iterate over this keys refering to it as `$/root`, then inside `$/root` you'll have
+access to all other variables and do syntax like `$/root["permissions"][sub_i(len($/root["permissions"]), 1)]` and all kind of available syntax.
+
+> [!WARNING]
+> This is not the final thought about how it'll be implemented, it's just one of many ideas. But, to be honest, I like this one
+
 ## Internal functions
 
 - [x] `integer sum_i(integer...)`, receive N `integers` as argument and return the sum of all of it as integer.
