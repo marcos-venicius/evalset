@@ -61,6 +61,8 @@ Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_
 void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array);
 Symbol interpret_var(Symbols symbols, Var var);
 Symbol_Value reduce_argument(Symbols symbols, Argument arg);
+Array reduce_array(Symbols symbols, Array root);
+Object reduce_object(Symbols symbols, Object root);
 
 static long __builtin_iota_current_value = 0;
 
@@ -73,6 +75,84 @@ static const char *symbol_kind_name(Symbol_Kind kind) {
         case SK_BOOLEAN: return "boolean";
         case SK_ARRAY: return "array";
         default: return "unknown";
+    }
+}
+
+static Argument_Kind symbol_kind_to_argument_kind(Symbol_Kind kind) {
+    switch (kind) {
+        case SK_NIL: return AK_NIL;
+        case SK_INTEGER: return AK_INTEGER;
+        case SK_STRING: return AK_STRING;
+        case SK_FLOAT: return AK_FLOAT;
+        case SK_BOOLEAN: return AK_BOOLEAN;
+        case SK_OBJECT: return AK_OBJECT;
+        case SK_ARRAY: return AK_ARRAY;
+    }
+}
+
+static Var_Kind symbol_kind_to_var_kind(Symbol_Kind kind) {
+    switch (kind) {
+        case SK_NIL: return VK_NIL;
+        case SK_INTEGER: return VK_INTEGER;
+        case SK_STRING: return VK_STRING;
+        case SK_FLOAT: return VK_FLOAT;
+        case SK_BOOLEAN: return VK_BOOLEAN;
+        case SK_OBJECT: return VK_OBJECT;
+        case SK_ARRAY: return VK_ARRAY;
+    }
+}
+
+static Argument_Kind var_kind_to_argument_kind(Var_Kind kind) {
+    switch (kind) {
+        case VK_NIL: return AK_NIL;
+        case VK_INTEGER: return AK_INTEGER;
+        case VK_STRING: return AK_STRING;
+        case VK_FLOAT: return AK_FLOAT;
+        case VK_BOOLEAN: return AK_BOOLEAN;
+        case VK_OBJECT: return AK_OBJECT;
+        case VK_ARRAY: return AK_ARRAY;
+        case VK_PATH: return AK_PATH;
+        case VK_FUN_CALL: return AK_FUN_CALL;
+        case VK_SUM: return AK_SUM;
+    }
+}
+
+static Argument_Data_Types symbol_data_type_to_argument_data_type(Symbol_Kind kind, Symbol_Data_Types data) {
+    switch (kind) {
+        case SK_NIL: return (Argument_Data_Types){.fun_call = NULL};
+        case SK_INTEGER: return (Argument_Data_Types){.integer = data.integer};
+        case SK_STRING: return (Argument_Data_Types){.string = data.string};
+        case SK_FLOAT: return (Argument_Data_Types){.floating = data.floating};
+        case SK_BOOLEAN: return (Argument_Data_Types){.boolean = data.boolean};
+        case SK_OBJECT: return (Argument_Data_Types){.object = data.object};
+        case SK_ARRAY: return (Argument_Data_Types){.array = data.array};
+    }
+}
+
+static Var_Data_Types symbol_data_type_to_var_data_type(Symbol_Kind kind, Symbol_Data_Types data) {
+    switch (kind) {
+        case SK_NIL: return (Var_Data_Types){.fun_call = NULL};
+        case SK_INTEGER: return (Var_Data_Types){.integer = data.integer};
+        case SK_STRING: return (Var_Data_Types){.string = data.string};
+        case SK_FLOAT: return (Var_Data_Types){.floating = data.floating};
+        case SK_BOOLEAN: return (Var_Data_Types){.boolean = data.boolean};
+        case SK_OBJECT: return (Var_Data_Types){.object = data.object};
+        case SK_ARRAY: return (Var_Data_Types){.array = data.array};
+    }
+}
+
+static Argument_Data_Types var_data_type_to_argument_data_type(Var_Kind kind, Var_Data_Types data) {
+    switch (kind) {
+        case VK_NIL: return (Argument_Data_Types){.fun_call = NULL};
+        case VK_INTEGER: return (Argument_Data_Types){.integer = data.integer};
+        case VK_STRING: return (Argument_Data_Types){.string = data.string};
+        case VK_FLOAT: return (Argument_Data_Types){.floating = data.floating};
+        case VK_BOOLEAN: return (Argument_Data_Types){.boolean = data.boolean};
+        case VK_OBJECT: return (Argument_Data_Types){.object = data.object};
+        case VK_ARRAY: return (Argument_Data_Types){.array = data.array};
+        case VK_PATH: return (Argument_Data_Types){.path = data.path};
+        case VK_FUN_CALL: return (Argument_Data_Types){.fun_call = data.fun_call};
+        case VK_SUM: return (Argument_Data_Types){.fun_call = NULL};
     }
 }
 
@@ -194,12 +274,58 @@ Symbol_Value reduce_argument(Symbols symbols, Argument arg) {
         case AK_STRING: return (Symbol_Value){.kind = SK_STRING, .as.string = arg.as.string};
         case AK_FLOAT: return (Symbol_Value){.kind = SK_FLOAT, .as.floating = arg.as.floating};
         case AK_BOOLEAN: return (Symbol_Value){.kind = SK_BOOLEAN, .as.boolean = arg.as.boolean};
-        case AK_OBJECT: return compute_indexing(symbols, arg.metadata, (Symbol_Value){.kind = SK_OBJECT, .as.object = arg.as.object});
-        case AK_ARRAY: return compute_indexing(symbols, arg.metadata, (Symbol_Value){.kind = SK_ARRAY, .as.array = arg.as.array});
+        case AK_OBJECT: return compute_indexing(symbols, arg.metadata, (Symbol_Value){.kind = SK_OBJECT, .as.object = reduce_object(symbols, arg.as.object) });
+        case AK_ARRAY: return compute_indexing(symbols, arg.metadata, (Symbol_Value){.kind = SK_ARRAY, .as.array = reduce_array(symbols, arg.as.array) });
         case AK_PATH: return compute_variable_reference(symbols, arg.loc, arg.as.path, arg.metadata);
         case AK_FUN_CALL: return compute_indexing(symbols, arg.metadata, eval_builtin_fun_call(symbols, arg.loc, arg.as.fun_call));
         default: assertf(false, "unreacheable");
     }
+}
+
+Array reduce_array(Symbols symbols, Array root) {
+    Array out = {0};
+
+    for (size_t i = 0; i < root.length; ++i) {
+        Argument arg = root.data[i];
+
+        Symbol_Value value = reduce_argument(symbols, arg);
+
+        Argument new_arg = {
+            .loc = arg.loc,
+            .kind = symbol_kind_to_argument_kind(value.kind),
+            .as = symbol_data_type_to_argument_data_type(value.kind, value.as),
+            .metadata = {0}
+        };
+
+        array_append(&out, new_arg);
+    }
+
+    return out;
+}
+
+Object reduce_object(Symbols symbols, Object root) {
+    Object out = {0};
+
+    for (size_t i = 0; i < root.length; ++i) {
+        Var var = root.data[i];
+
+        Argument arg = (Argument){
+            .loc = var.loc,
+            .metadata = var.metadata,
+            .kind = var_kind_to_argument_kind(var.kind),
+            .as = var_data_type_to_argument_data_type(var.kind, var.as)
+        };
+
+        Symbol_Value value = reduce_argument(symbols, arg);
+
+        var.kind = symbol_kind_to_var_kind(value.kind);
+        var.metadata = (Metadata){0};
+        var.as = symbol_data_type_to_var_data_type(value.kind, value.as);
+
+        array_append(&out, var);
+    }
+
+    return out;
 }
 
 long __bultin_fun_call_sum_ai(Symbols symbols, Location loc, Fun_Call *fun_call) {
@@ -725,11 +851,11 @@ Symbol interpret_var(Symbols symbols, Var var) {
         } break;
         case VK_ARRAY: {
             symbol.value.kind = SK_ARRAY;
-            symbol.value.as.array = var.as.array;
+            symbol.value.as.array = reduce_array(symbols, var.as.array);
         } break;
         case VK_OBJECT: {
             symbol.value.kind = SK_OBJECT;
-            symbol.value.as.object = var.as.object;
+            symbol.value.as.object = reduce_object(symbols, var.as.object);
         } break;
         default: assert(0 && "kind not evaluated yet");
     }
