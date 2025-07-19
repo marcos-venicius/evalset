@@ -14,10 +14,12 @@ sum_af = sum_af([3.14, 0.1, 0.2])
 
 # `[]any concat_a([]any...)`, receive N `arrays` as argument and return all arrays concatenated.
 
-array_a = [3.14, 0.1, 0.2]
+array_a = [iota(), 0.1, 0.2]
 array_b = [10, 30, 50, 100]
+second_array_a_item = 1
 
 concat_a = concat_a(
+    [$/array_a[$/second_array_a_item]],
 	$/array_a,
 	[$/array_b[len($/array_a)]],
 	[concat_a(["Hello"], ["World"])[0], "testing"]

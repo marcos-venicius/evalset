@@ -9,6 +9,7 @@
 Var_Data_Types parse_object_variable(Token **ref);
 Var_Data_Types parse_array_variable(Token **ref);
 Var_Data_Types_Indentified parse_fun_call_variable(Token **ref);
+Var_Data_Types_Indentified parse_path_variable(Token **ref);
 
 static Location current_location;
 
@@ -371,6 +372,10 @@ Array parse_indexes(Token **ref) {
             case TK_SYM: {
                 Var_Data_Types_Indentified var = parse_fun_call_variable(ref);
                 index_argument = create_argument_from_kind(current_location, VK_FUN_CALL, var.as, var.metadata);
+            } break;
+            case TK_PATH_ROOT: {
+                Var_Data_Types_Indentified var = parse_path_variable(ref);
+                index_argument = create_argument_from_kind(current_location, VK_PATH, var.as, var.metadata);
             } break;
             default: {
                 fprintf(
