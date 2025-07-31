@@ -2,7 +2,7 @@ CXX = clang
 CFLAGS = -Wall -Wextra -pedantic -ggdb
 EXE_NAME = evalset
 
-$(EXE_NAME): evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o map.o
+$(EXE_NAME): evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o map.o ./builtins/sum.o
 	$(CXX) $(CFLAGS) -o $(EXE_NAME) $^
 
 parser.o: parser.h parser.c loc.h lexer.h
@@ -23,11 +23,14 @@ io.o: io.c io.h
 map.o: map.c map.h utils.h
 	$(CXX) $(CFLAGS) -c map.c -o map.o
 
-interpreter.o: interpreter.c interpreter.h parser.h map.h loc.h utils.h assertf.h
+builtin_sum.o: ./builtins/sum.c ./builtins/functions.h
+	$(CXX) $(CFLAGS) -c ./builtins/sum.c -o ./builtins/sum.o
+
+interpreter.o: interpreter.c interpreter.h parser.h map.h loc.h utils.h assertf.h ./builtins/functions.h
 	$(CXX) $(CFLAGS) -c interpreter.c -o interpreter.o
 
 evalset.o: evalset.c io.h parser.h lexer.h print.h
 	$(CXX) $(CFLAGS) -c evalset.c -o evalset.o
 
 clean:
-	rm -rf $(EXE_NAME) *.o
+	rm -rf $(EXE_NAME) `find . -type f -name '*.o'`
