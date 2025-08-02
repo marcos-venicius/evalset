@@ -1,6 +1,6 @@
 id = iota() # Some kind of sequential id generator like in golang
-anything = concat_a(["name", 10, 10.5, nil, true, false])
-result = concat_a(
+anything = join(["name", 10, 10.5, nil, true, false], [])
+result = join(
   [1, 2, 3]
   [4 ,5, 6]
   [
@@ -28,7 +28,7 @@ keys = keys({
 # sum_of_all = sum($/adding, $/multiplying, $/subtracting)
 
 # 2 + (3 * 2)
-expr = sum_f(2, sum_f(3, 2, sum_af(concat_a([20, 30], [4, 8.7]))))
+expr = sum(2, sum(3, 2, sum(join([20, 30], [4, 8.7]))))
 
 permissions = {
   default = ["user:read" "user:write"]
@@ -40,7 +40,7 @@ permissions = {
 default_permissions = $/permissions["default"]
 admin_permissions = $/permissions["admin"]
 
-empty_array = [sum_i(10, 10)]
+empty_array = [sum(10, 10)]
 empty_object = {}
 
 matrix = [

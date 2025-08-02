@@ -107,11 +107,7 @@ struct Argument {
 struct Fun_Call {
     String name;
 
-    struct {
-        size_t length, capacity;
-
-        Argument *data;
-    } arguments;
+    Array arguments;
 };
 
 typedef union {
