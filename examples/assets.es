@@ -3,7 +3,7 @@ base_path = "/base/path"
 assets = [
     {
         id = iota()
-        path = join_as([$/base_path, "logo.png"], "/")
+        path = join([$/base_path, "logo.png"], "/")
         size = {
             width = 250
             height = 250
@@ -11,7 +11,7 @@ assets = [
     }
     {
         id = iota()
-        path = join_as([$/base_path, "footer.png"], "/")
+        path = join([$/base_path, "footer.png"], "/")
         size = {
             width = 250
             height = 250
@@ -19,7 +19,7 @@ assets = [
     }
     {
         id = iota()
-        path = concat_s($/base_path, "/hero.png")
+        path = join($/base_path, "/hero.png")
         size = {
             width = 250
             height = 250

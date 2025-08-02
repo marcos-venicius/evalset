@@ -5,28 +5,28 @@ money = 3.500000
 tall = true
 small = true
 small = false
-total = sum_i(
+total = sum(
   10,
   20,
   3,
   6,
   -2,
-  sum_i(1000, -500)
+  sum(1000, -500)
 )
 
-floats = sum_f(
+floats = sum(
   0.100000, 0.200000,
-  sum_f(3.141500, sum_i(10, 10)),
-  sum_i(100, -100)
+  sum(3.141500, sum(10, 10)),
+  sum(100, -100)
 )
 
-double_age = sum_i($/total, 2)
+double_age = sum($/total, 2)
 
 bills = [
   "Water",
   "Energy",
   $/double_age,
-  sum_f(
+  sum(
     $/floats,
     $/total,
     $/double_age

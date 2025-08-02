@@ -7,6 +7,8 @@ Symbol_Value reduce_argument(Symbols symbols, Argument arg);
 const char *symbol_kind_name(Symbol_Kind kind);
 
 Symbol_Value builtin_funcall__sum(Symbols symbols, Location loc, Fun_Call *fun_call) {
+    (void)loc;
+
     if (fun_call->arguments.length == 0) {
         return (Symbol_Value){
             .kind = SK_INTEGER,
@@ -16,8 +18,10 @@ Symbol_Value builtin_funcall__sum(Symbols symbols, Location loc, Fun_Call *fun_c
 
     double result = 0;
 
+    Symbol_Value arg1 = reduce_argument(symbols, fun_call->arguments.data[0]);
+
     bool has_float = false;
-    bool is_array = fun_call->arguments.data[0].kind == AK_ARRAY;
+    bool is_array = arg1.kind == SK_ARRAY;
 
     if (is_array && fun_call->arguments.length > 1) {
         fprintf(
@@ -30,7 +34,7 @@ Symbol_Value builtin_funcall__sum(Symbols symbols, Location loc, Fun_Call *fun_c
 
     Array array = fun_call->arguments;
 
-    if (is_array) array = fun_call->arguments.data[0].as.array;
+    if (is_array) array = arg1.as.array;
 
     for (size_t i = 0; i < array.length; ++i) {
         Argument argument = array.data[i];

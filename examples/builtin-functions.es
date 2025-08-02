@@ -6,3 +6,8 @@
 "float sum(float, N...)" = sum(10.5, 20.2, 30.3, 40.5)
 "float sum([]float)" = sum([10.5, 20.2, 30.3, 40.5])
 "float sum([](float & integer))" = sum([10.5, 20.2, 30.3, 40.5, 10, 20, 30, 40])
+
+"string join([]string, string)" = join(["hello", "world", "."], "-")
+"string join([]string, nil)" = join(["hello", "world", "."], nil)
+"[]any join([]any, []any, N...)" = join(["hello"], ["world"], ["testing", "it"])
+"string join(string, string, N...)" = join("hello", "world", ".")

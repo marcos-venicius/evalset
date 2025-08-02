@@ -11,9 +11,6 @@
 #include <stdio.h>
 
 #define BUILTIN_FUN_LEN   "len"
-#define BUILTIN_FUN_CONCAT_A "concat_a"
-#define BUILTIN_FUN_CONCAT_S "concat_s"
-#define BUILTIN_FUN_JOIN_AS "join_as"
 #define BUILTIN_FUN_KEYS "keys"
 #define BUILTIN_FUN_IOTA "iota"
 
@@ -288,135 +285,6 @@ Object reduce_object(Symbols symbols, Object root) {
     return out;
 }
 
-Array __bultin_fun_call_concat_a(Symbols symbols, Location loc, Fun_Call *fun_call) {
-    (void)loc;
-
-    Array result = {0};
-
-    for (size_t argument_index = 0; argument_index < fun_call->arguments.length; ++argument_index) {
-        Argument arg_a = fun_call->arguments.data[argument_index];
-        Symbol_Value arr = reduce_argument(symbols, arg_a);
-
-        if (arr.kind != SK_ARRAY) {
-            fprintf(
-                stderr,
-                LOC_ERROR_FMT" Function "BUILTIN_FUN_CONCAT_A" \033[1;35m%s\033[0m is not an array\n",
-                LOC_ERROR_ARG(arg_a.loc),
-                symbol_kind_name(arr.kind)
-            );
-            exit(1);
-        }
-
-
-        for (size_t i = 0; i < arr.as.array.length; ++i) array_append(&result, arr.as.array.data[i]);
-    }
-
-    return result;
-}
-
-String __bultin_fun_call_concat_s(Symbols symbols, Location loc, Fun_Call *fun_call) {
-    (void)loc;
-
-    char *string = calloc(1, 1);
-    size_t string_size = 1;
-
-    for (size_t argument_index = 0; argument_index < fun_call->arguments.length; ++argument_index) {
-        Argument arg = fun_call->arguments.data[argument_index];
-        Symbol_Value value = reduce_argument(symbols, arg);
-
-        if (value.kind != SK_STRING) {
-            fprintf(
-                stderr,
-                LOC_ERROR_FMT" Function "BUILTIN_FUN_CONCAT_S" \033[1;35m%s\033[0m is not a string\n",
-                LOC_ERROR_ARG(arg.loc),
-                symbol_kind_name(value.kind)
-            );
-            exit(1);
-        }
-
-        string_size += value.as.string.size;
-
-        string = realloc(string, string_size);
-        strncat(string, value.as.string.value, value.as.string.size);
-    }
-
-    string[string_size] = '\0';
-
-    return (String){.value = string, .size = string_size};
-}
-
-String __bultin_fun_call_join_as(Symbols symbols, Location loc, Fun_Call *fun_call) {
-    if (fun_call->arguments.length != 2) {
-        fprintf(
-            stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_LEN" expects 2 arguments but received %ld\n",
-            LOC_ERROR_ARG(loc),
-            fun_call->arguments.length
-        );
-        exit(1);
-    }
-
-    char *string = calloc(1, 1);
-    size_t string_size = 1;
-
-    Argument arg1 = fun_call->arguments.data[0];
-    Symbol_Value strings = reduce_argument(symbols, arg1);
-
-    if (strings.kind != SK_ARRAY) {
-        fprintf(
-            stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_JOIN_AS" \033[1;35m%s\033[0m is not an array\n",
-            LOC_ERROR_ARG(arg1.loc),
-            symbol_kind_name(strings.kind)
-        );
-        exit(1);
-    }
-
-    Argument arg2 = fun_call->arguments.data[1];
-    Symbol_Value separator = reduce_argument(symbols, arg2);
-
-    if (separator.kind != SK_STRING && separator.kind != SK_NIL) {
-        fprintf(
-            stderr,
-            LOC_ERROR_FMT" Function "BUILTIN_FUN_JOIN_AS" \033[1;35m%s\033[0m is not of type string?\n",
-            LOC_ERROR_ARG(arg2.loc),
-            symbol_kind_name(separator.kind)
-        );
-        exit(1);
-    }
-
-    for (size_t i = 0; i < strings.as.array.length; ++i) {
-        Argument arg = strings.as.array.data[i];
-        Symbol_Value value = reduce_argument(symbols, arg);
-
-        if (value.kind != SK_STRING) {
-            fprintf(
-                stderr,
-                LOC_ERROR_FMT" Function "BUILTIN_FUN_JOIN_AS" \033[1;35m%s\033[0m is not a string\n",
-                LOC_ERROR_ARG(arg.loc),
-                symbol_kind_name(value.kind)
-            );
-            exit(1);
-        }
-
-        if (i > 0 && separator.kind == SK_STRING) {
-            string_size += separator.as.string.size;
-
-            string = realloc(string, string_size);
-            strncat(string, separator.as.string.value, separator.as.string.size);
-        }
-
-        string_size += value.as.string.size;
-
-        string = realloc(string, string_size);
-        strncat(string, value.as.string.value, value.as.string.size);
-    }
-
-    string[string_size] = '\0';
-
-    return (String){.value = string, .size = string_size};
-}
-
 Array __bultin_fun_call_keys(Symbols symbols, Location loc, Fun_Call *fun_call) {
     if (fun_call->arguments.length != 1) {
         fprintf(
@@ -507,25 +375,12 @@ long __bultin_fun_call_iota(Symbols symbols, Location loc, Fun_Call *fun_call) {
 Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_call) {
     if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, __BUILTIN_FUN_CALL_SUM, __S_BUILTIN_FUN_CALL_SUM)) {
         return builtin_funcall__sum(symbols, loc, fun_call);
+    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, __BUILTIN_FUN_CALL_JOIN, __S_BUILTIN_FUN_CALL_JOIN)) {
+        return builtin_funcall__join(symbols, loc, fun_call);
     } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_LEN, strlen(BUILTIN_FUN_LEN))) {
         return (Symbol_Value){
             .kind = SK_INTEGER,
             .as.integer.value = __bultin_fun_call_len(symbols, loc, fun_call),
-        };
-    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_CONCAT_A, strlen(BUILTIN_FUN_CONCAT_A))) {
-        return (Symbol_Value){
-            .kind = SK_ARRAY,
-            .as.array = __bultin_fun_call_concat_a(symbols, loc, fun_call),
-        };
-    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_CONCAT_S, strlen(BUILTIN_FUN_CONCAT_S))) {
-        return (Symbol_Value){
-            .kind = SK_STRING,
-            .as.string = __bultin_fun_call_concat_s(symbols, loc, fun_call),
-        };
-    } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_JOIN_AS, strlen(BUILTIN_FUN_JOIN_AS))) {
-        return (Symbol_Value){
-            .kind = SK_STRING,
-            .as.string = __bultin_fun_call_join_as(symbols, loc, fun_call),
         };
     } else if (cmp_sized_strings(fun_call->name.value, fun_call->name.size, BUILTIN_FUN_KEYS, strlen(BUILTIN_FUN_KEYS))) {
         return (Symbol_Value){

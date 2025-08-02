@@ -2,7 +2,7 @@ CXX = clang
 CFLAGS = -Wall -Wextra -pedantic -ggdb
 EXE_NAME = evalset
 
-$(EXE_NAME): evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o map.o ./builtins/sum.o
+$(EXE_NAME): evalset.o parser.o lexer.o io.o utils.o print.o interpreter.o map.o ./builtins/sum.o ./builtins/join.o
 	$(CXX) $(CFLAGS) -o $(EXE_NAME) $^
 
 parser.o: parser.h parser.c loc.h lexer.h
@@ -25,6 +25,9 @@ map.o: map.c map.h utils.h
 
 builtin_sum.o: ./builtins/sum.c ./builtins/functions.h
 	$(CXX) $(CFLAGS) -c ./builtins/sum.c -o ./builtins/sum.o
+
+builtin_join.o: ./builtins/join.c ./builtins/functions.h
+	$(CXX) $(CFLAGS) -c ./builtins/join.c -o ./builtins/join.o
 
 interpreter.o: interpreter.c interpreter.h parser.h map.h loc.h utils.h assertf.h ./builtins/functions.h
 	$(CXX) $(CFLAGS) -c interpreter.c -o interpreter.o

@@ -122,13 +122,12 @@ access to all other variables and do syntax like `$/root["permissions"][sub_i(le
     - [x] `float sum(float, N...)`
     - [x] `integer sum([]integer)`
     - [x] `float sum([](float & integer))`
-- [ ] `concat`
-    - [ ] `[]any concat([]any, []any, ...)`
-    - [ ] `string concat(string, string, ...)`
-- [ ] `join`
-    - [ ] `string join([]string, string?)`
+- [x] `join`
+    - [x] `string join([]string, string?)`
+    - [x] `[]any join([]any, []any, N...)`
+    - [x] `string join(string, string, N...)`
 - [x] `[]string keys(object)`
-- [ ] `integer len([]any|string)`
+- [x] `integer len([]any|string)`
 - [x] `integer iota()`, returns an integer which auto-increment every time it's called
 
 I still have some internal functions in my, but for now, I'll leave only these ones.
