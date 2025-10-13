@@ -91,30 +91,39 @@ int main(int argc, char **argv) {
 
         long result = es_get_integer(
             symbols,
-            ES_STRING_ARG("assets"),
-            ES_NUMBER_ARG(0),
-            ES_STRING_ARG("size"),
-            ES_STRING_ARG("width"),
+            ES_KEY_ARG("assets"),
+            ES_INDEX_ARG(0),
+            ES_KEY_ARG("size"),
+            ES_KEY_ARG("width"),
             ES_ARG_END
         );
 
         bool active = es_get_boolean(
             symbols,
-            ES_STRING_ARG("is_true"),
+            ES_KEY_ARG("is_true"),
             ES_ARG_END
         );
 
         double money = es_get_float(
             symbols,
-            ES_STRING_ARG("assets"),
-            ES_NUMBER_ARG(3),
-            ES_STRING_ARG("money"),
+            ES_KEY_ARG("assets"),
+            ES_INDEX_ARG(3),
+            ES_KEY_ARG("money"),
+            ES_ARG_END
+        );
+        
+        String second_path = es_get_string(
+            symbols,
+            ES_KEY_ARG("assets"),
+            ES_INDEX_ARG(1),
+            ES_KEY_ARG("path"),
             ES_ARG_END
         );
 
         printf("result: %ld\n", result);
         printf("active: %s\n", active ? "true" : "false");
         printf("money: %lf\n", money);
+        printf("path: [%.*s]\n", (int)second_path.size, second_path.value);
 
 
 

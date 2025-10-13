@@ -244,9 +244,26 @@ double es_get_float(Symbols symbols, ...)
     va_end(args);
 
     if (dt.kind != _DK_FLOAT) {
-        fprintf(stderr, "error: object type is not a boolean\n");
+        fprintf(stderr, "error: object type is not a float\n");
         exit(1);
     }
 
     return dt.as.floating.value;
+}
+
+String es_get_string(Symbols symbols, ...)
+{
+    va_list args;
+    va_start(args, symbols);
+
+    _Data_Type dt = load_data_type(symbols, args);
+
+    va_end(args);
+
+    if (dt.kind != _DK_STRING) {
+        fprintf(stderr, "error: object type is not a string\n");
+        exit(1);
+    }
+
+    return dt.as.string;
 }
