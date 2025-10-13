@@ -91,32 +91,32 @@ int main(int argc, char **argv) {
 
         long result = es_get_integer(
             symbols,
-            ES_KEY_ARG("assets"),
-            ES_INDEX_ARG(0),
-            ES_KEY_ARG("size"),
-            ES_KEY_ARG("width"),
+            ES_KEY("assets"),
+            ES_INDEX(0),
+            ES_KEY("size"),
+            ES_KEY("width"),
             ES_ARG_END
         );
 
         bool active = es_get_boolean(
             symbols,
-            ES_KEY_ARG("is_true"),
+            ES_KEY("is_true"),
             ES_ARG_END
         );
 
         double money = es_get_float(
             symbols,
-            ES_KEY_ARG("assets"),
-            ES_INDEX_ARG(3),
-            ES_KEY_ARG("money"),
+            ES_KEY("assets"),
+            ES_INDEX(3),
+            ES_KEY("money"),
             ES_ARG_END
         );
         
         String second_path = es_get_string(
             symbols,
-            ES_KEY_ARG("assets"),
-            ES_INDEX_ARG(1),
-            ES_KEY_ARG("path"),
+            ES_KEY("assets"),
+            ES_INDEX(1),
+            ES_KEY("path"),
             ES_ARG_END
         );
 
