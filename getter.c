@@ -34,14 +34,14 @@ typedef struct {
 } _Data_Type;
 
 static _Data_Type load_data_type(Symbols symbols, va_list args) {
-    EsArgType type;
+    _EsArgType type;
 
     _Data_Type dt = {
         .as.symbols = symbols,
         .kind = _DK_SYMBOLS
     };
 
-    while ((type = va_arg(args, EsArgType)) != ES_ARG_END) {
+    while ((type = va_arg(args, _EsArgType)) != ES_END) {
         switch (type) {
             case ES_ARG_NUMBER: {
                 size_t value = va_arg(args, long);

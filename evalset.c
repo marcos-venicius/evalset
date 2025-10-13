@@ -95,13 +95,13 @@ int main(int argc, char **argv) {
             ES_INDEX(0),
             ES_KEY("size"),
             ES_KEY("width"),
-            ES_ARG_END
+            ES_END
         );
 
         bool active = es_get_boolean(
             symbols,
             ES_KEY("is_true"),
-            ES_ARG_END
+            ES_END
         );
 
         double money = es_get_float(
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
             ES_KEY("assets"),
             ES_INDEX(3),
             ES_KEY("money"),
-            ES_ARG_END
+            ES_END
         );
         
         String second_path = es_get_string(
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
             ES_KEY("assets"),
             ES_INDEX(1),
             ES_KEY("path"),
-            ES_ARG_END
+            ES_END
         );
 
         printf("result: %ld\n", result);

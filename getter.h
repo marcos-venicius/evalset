@@ -6,8 +6,8 @@
 typedef enum {
     ES_ARG_NUMBER,
     ES_ARG_STRING,
-    ES_ARG_END
-} EsArgType;
+    ES_END
+} _EsArgType;
 
 #define ES_INDEX(value) ES_ARG_NUMBER, (size_t)(value)
 #define ES_KEY(value) ES_ARG_STRING, (value)
