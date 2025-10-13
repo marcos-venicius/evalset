@@ -98,7 +98,14 @@ int main(int argc, char **argv) {
             ES_ARG_END
         );
 
+        bool active = es_get_boolean(
+            symbols,
+            ES_STRING_ARG("is_true"),
+            ES_ARG_END
+        );
+
         printf("result: %ld\n", result);
+        printf("active: %s\n", active ? "true" : "false");
 
 
 

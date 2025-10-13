@@ -216,3 +216,20 @@ long es_get_integer(Symbols symbols, ...)
 
     return dt.as.integer.value;
 }
+
+bool es_get_boolean(Symbols symbols, ...)
+{
+    va_list args;
+    va_start(args, symbols);
+
+    _Data_Type dt = load_data_type(symbols, args);
+
+    va_end(args);
+
+    if (dt.kind != _DK_BOOLEAN) {
+        fprintf(stderr, "error: object type is not a boolean\n");
+        exit(1);
+    }
+
+    return dt.as.boolean.value;
+}

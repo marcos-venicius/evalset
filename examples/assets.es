@@ -1,9 +1,11 @@
 base_path = "/base/path"
 
+is_true = true
 assets = [
     {
         id = iota()
         path = join([$/base_path, "logo.png"], "/")
+        active = true
         size = {
             width = 250
             height = 250
@@ -12,6 +14,7 @@ assets = [
     {
         id = iota()
         path = join([$/base_path, "footer.png"], "/")
+        active = false
         size = {
             width = 250
             height = 250
