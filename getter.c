@@ -33,11 +33,7 @@ typedef struct {
     } as;
 } _Data_Type;
 
-long es_get_integer(Symbols symbols, ...)
-{
-    va_list args;
-    va_start(args, symbols);
-
+static _Data_Type load_data_type(Symbols symbols, va_list args) {
     EsArgType type;
 
     _Data_Type dt = {
@@ -200,6 +196,16 @@ long es_get_integer(Symbols symbols, ...)
             default: break;
         }
     }
+
+    return dt;
+}
+
+long es_get_integer(Symbols symbols, ...)
+{
+    va_list args;
+    va_start(args, symbols);
+
+    _Data_Type dt = load_data_type(symbols, args);
 
     va_end(args);
 

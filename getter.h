@@ -13,5 +13,6 @@ typedef enum {
 #define ES_STRING_ARG(value) ES_ARG_STRING, (value)
 
 long es_get_integer(Symbols symbols, ...);
+bool es_get_boolean(Symbols symbols, ...);
 
 #endif // !GETTER_H_

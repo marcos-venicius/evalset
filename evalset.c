@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
         long result = es_get_integer(
             symbols,
             ES_STRING_ARG("assets"),
-            ES_NUMBER_ARG(1),
+            ES_NUMBER_ARG(0),
             ES_STRING_ARG("size"),
             ES_STRING_ARG("width"),
             ES_ARG_END
