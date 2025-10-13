@@ -499,7 +499,7 @@ Symbol interpret_var(Symbols symbols, Var var) {
     return symbol;
 }
 
-void interpret(const Var *vars, size_t length) {
+Symbols interpret(const Var *vars, size_t length) {
     Symbols symbols = map_new();
 
     for (size_t i = 0; i < length; i++) {
@@ -510,6 +510,7 @@ void interpret(const Var *vars, size_t length) {
         map_set(symbols, symbol.name.value, &symbol, sizeof(Symbol));
     }
 
+    /*
     printf("Symbols table (%ld)\n", symbols->length);
     for (size_t i = 0; i < MAP_BUCKET_SIZE; ++i) {
         MapNode *node = symbols->nodes[i];
@@ -522,6 +523,7 @@ void interpret(const Var *vars, size_t length) {
             node = node->next;
         }
     }
+    */
 
-    map_free(symbols);
+    return symbols;
 }

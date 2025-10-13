@@ -21,7 +21,7 @@ assets = [
         id = iota()
         path = join($/base_path, "/hero.png")
         size = {
-            width = 250
+            width = sum(200, 50)
             height = 250
         }
     }

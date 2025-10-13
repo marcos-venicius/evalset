@@ -7,7 +7,9 @@
 #include "./io.h"
 #include "./print.h"
 #include "./interpreter.h"
+#include "map.h"
 #include "utils.h"
+#include "./getter.h"
 
 #define arg() shift(&argc, &argv)
 
@@ -55,7 +57,104 @@ int main(int argc, char **argv) {
             if (i < parser.length - 1) printf("\n");
         }
     } else {
-        interpret(parser.vars, parser.length);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        Symbols symbols = interpret(parser.vars, parser.length);
+
+        long result = es_get_integer(
+            symbols,
+            ES_STRING_ARG("assets"),
+            ES_NUMBER_ARG(1),
+            ES_STRING_ARG("size"),
+            ES_STRING_ARG("width"),
+            ES_ARG_END
+        );
+
+        printf("result: %ld\n", result);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        map_free(symbols);
     }
 
     parser_free(parser);
