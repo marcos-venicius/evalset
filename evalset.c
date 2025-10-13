@@ -104,8 +104,17 @@ int main(int argc, char **argv) {
             ES_ARG_END
         );
 
+        double money = es_get_float(
+            symbols,
+            ES_STRING_ARG("assets"),
+            ES_NUMBER_ARG(3),
+            ES_STRING_ARG("money"),
+            ES_ARG_END
+        );
+
         printf("result: %ld\n", result);
         printf("active: %s\n", active ? "true" : "false");
+        printf("money: %lf\n", money);
 
 
 

@@ -27,6 +27,9 @@ assets = [
             width = sum(200, 50)
             height = 250
         }
+    },
+    {
+        money = 40.56
     }
 ]
 

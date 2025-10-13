@@ -14,5 +14,6 @@ typedef enum {
 
 long es_get_integer(Symbols symbols, ...);
 bool es_get_boolean(Symbols symbols, ...);
+double es_get_float(Symbols symbols, ...);
 
 #endif // !GETTER_H_

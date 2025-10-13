@@ -233,3 +233,20 @@ bool es_get_boolean(Symbols symbols, ...)
 
     return dt.as.boolean.value;
 }
+
+double es_get_float(Symbols symbols, ...)
+{
+    va_list args;
+    va_start(args, symbols);
+
+    _Data_Type dt = load_data_type(symbols, args);
+
+    va_end(args);
+
+    if (dt.kind != _DK_FLOAT) {
+        fprintf(stderr, "error: object type is not a boolean\n");
+        exit(1);
+    }
+
+    return dt.as.floating.value;
+}
