@@ -145,10 +145,10 @@ struct Var {
 typedef struct {
     size_t length, capacity;
     union {
-        Var *data;
+        Var *data; // Just another name for "vars" so we can make the array macros work
         Var *vars;
     };
-} Parser;
+} Ast;
 
 #define array_append(array, item) do { \
     if ((array)->length >= (array)->capacity) { \
@@ -169,8 +169,8 @@ typedef struct {
 
 #define array_flush(array) (array)->length = 0;
 
-Parser parse_tokens(Token *head);
-void parser_free(Parser parser);
+Ast parse_tokens(Token *head);
+void ast_free(Ast ast);
 const char *var_kind_name(Var_Kind var_kind);
 const char *argument_kind_name(Argument_Kind kind);
 

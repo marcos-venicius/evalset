@@ -4,5 +4,6 @@
 #include "./parser.h"
 
 void interpret(const Var *vars, size_t length);
+void to_json(const Var *vars, size_t length);
 
 #endif // !INTERPRETER_H_

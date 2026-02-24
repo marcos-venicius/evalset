@@ -15,13 +15,14 @@
 #define BUILTIN_FUN_IOTA "iota"
 
 Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_call);
-void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array);
-Symbol interpret_var(Symbols symbols, Var var);
+void print_symbol(Symbols symbols, Symbol symbol, bool is_inside_array, bool json_like);
+Symbol interpret_var(Var var);
 Symbol_Value reduce_argument(Symbols symbols, Argument arg);
 Array reduce_array(Symbols symbols, Array root);
 Object reduce_object(Symbols symbols, Object root);
 
 static long __builtin_iota_current_value = 0;
+static Symbols symbols;
 
 const char *symbol_kind_name(Symbol_Kind kind) {
     switch (kind) {
@@ -44,6 +45,7 @@ static Argument_Kind symbol_kind_to_argument_kind(Symbol_Kind kind) {
         case SK_BOOLEAN: return AK_BOOLEAN;
         case SK_OBJECT: return AK_OBJECT;
         case SK_ARRAY: return AK_ARRAY;
+        default: assert(0 && "symbol_kind_to_argument_kind: unhandled symbol kind"); return 0;
     }
 }
 
@@ -56,6 +58,7 @@ static Var_Kind symbol_kind_to_var_kind(Symbol_Kind kind) {
         case SK_BOOLEAN: return VK_BOOLEAN;
         case SK_OBJECT: return VK_OBJECT;
         case SK_ARRAY: return VK_ARRAY;
+        default: assert(0 && "symbol_kind_to_var_kind: unhandled symbol kind"); return 0;
     }
 }
 
@@ -71,6 +74,7 @@ static Argument_Kind var_kind_to_argument_kind(Var_Kind kind) {
         case VK_PATH: return AK_PATH;
         case VK_FUN_CALL: return AK_FUN_CALL;
         case VK_SUM: return AK_SUM;
+        default: assert(0 && "var_kind_to_argument_kind: unhandled var kind"); return 0;
     }
 }
 
@@ -83,6 +87,7 @@ static Argument_Data_Types symbol_data_type_to_argument_data_type(Symbol_Kind ki
         case SK_BOOLEAN: return (Argument_Data_Types){.boolean = data.boolean};
         case SK_OBJECT: return (Argument_Data_Types){.object = data.object};
         case SK_ARRAY: return (Argument_Data_Types){.array = data.array};
+        default: assert(0 && "symbol_data_type_to_argument_data_type: unhandled symbol kind"); return (Argument_Data_Types){0};
     }
 }
 
@@ -95,6 +100,7 @@ static Var_Data_Types symbol_data_type_to_var_data_type(Symbol_Kind kind, Symbol
         case SK_BOOLEAN: return (Var_Data_Types){.boolean = data.boolean};
         case SK_OBJECT: return (Var_Data_Types){.object = data.object};
         case SK_ARRAY: return (Var_Data_Types){.array = data.array};
+        default: assert(0 && "symbol_data_type_to_var_data_type: unhandled symbol kind"); return (Var_Data_Types){0};
     }
 }
 
@@ -110,6 +116,7 @@ static Argument_Data_Types var_data_type_to_argument_data_type(Var_Kind kind, Va
         case VK_PATH: return (Argument_Data_Types){.path = data.path};
         case VK_FUN_CALL: return (Argument_Data_Types){.fun_call = data.fun_call};
         case VK_SUM: return (Argument_Data_Types){.fun_call = NULL};
+        default: assert(0 && "var_data_type_to_argument_data_type: unhandled var kind"); return (Argument_Data_Types){0};
     }
 }
 
@@ -166,7 +173,7 @@ Symbol_Value compute_indexing(Symbols symbols, Metadata metadata, Symbol_Value i
 
                     if (cmp_sized_strings(var.name.value, var.name.size, index.as.string.value, index.as.string.size)) {
                         found = true;
-                        value = interpret_var(symbols, var).value;
+                        value = interpret_var(var).value;
                         break;
                     }
                 }
@@ -251,7 +258,7 @@ Array reduce_array(Symbols symbols, Array root) {
             .loc = arg.loc,
             .kind = symbol_kind_to_argument_kind(value.kind),
             .as = symbol_data_type_to_argument_data_type(value.kind, value.as),
-            .metadata = {0}
+            .metadata = {{0}}
         };
 
         array_append(&out, new_arg);
@@ -403,14 +410,22 @@ Symbol_Value eval_builtin_fun_call(Symbols symbols, Location loc, Fun_Call *fun_
     }
 }
 
-void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array) {
+void print_symbol(Symbols symbols, Symbol symbol, bool is_inside_array, bool json_like) {
     if (!is_inside_array) {
-        printf("  %s = ", symbol.name.value);
+        if (json_like) {
+            printf("  \"%s\": ", symbol.name.value);
+        } else {
+            printf("  %s = ", symbol.name.value);
+        }
     }
 
     switch (symbol.value.kind) {
         case SK_NIL: {
-            printf("nil");
+            if (json_like) {
+                printf("null");
+            } else {
+                printf("nil");
+            }
         } break;
         case SK_STRING: {
             printf("\"%s\"", symbol.value.as.string.value);
@@ -428,10 +443,10 @@ void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array) {
             printf("[");
             for (size_t i = 0; i < symbol.value.as.array.length; ++i) {
                 Argument arg = symbol.value.as.array.data[i];
-                Symbol_Value reduced_value = reduce_argument(*symbols, arg);
+                Symbol_Value reduced_value = reduce_argument(symbols, arg);
 
                 if (i > 0) printf(", ");
-                print_symbol(symbols, (Symbol){.value = reduced_value}, true);
+                print_symbol(symbols, (Symbol){.value = reduced_value}, true, json_like);
             }
             printf("]");
         } break;
@@ -442,11 +457,15 @@ void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array) {
 
                 if (i > 0) printf(", ");
 
-                Symbol symbol = interpret_var(*symbols, var);
+                Symbol symbol = interpret_var(var);
 
-                printf("%s = ", var.name.value);
+                if (json_like) {
+                    printf("\"%s\": ", var.name.value);
+                } else {
+                    printf("%s = ", var.name.value);
+                }
 
-                print_symbol(symbols, symbol, true);
+                print_symbol(symbols, symbol, true, json_like);
             }
             printf("}");
         } break;
@@ -456,7 +475,7 @@ void print_symbol(Symbols *symbols, Symbol symbol, bool is_inside_array) {
     if (!is_inside_array) printf("\n");
 }
 
-Symbol interpret_var(Symbols symbols, Var var) {
+Symbol interpret_var(Var var) {
     Symbol symbol = {
         .name = {
             .value = var.name.value,
@@ -500,12 +519,12 @@ Symbol interpret_var(Symbols symbols, Var var) {
 }
 
 void interpret(const Var *vars, size_t length) {
-    Symbols symbols = map_new();
+    symbols = map_new();
 
     for (size_t i = 0; i < length; i++) {
         Var var = vars[i];
 
-        Symbol symbol = interpret_var(symbols, var);
+        Symbol symbol = interpret_var(var);
 
         map_set(symbols, symbol.name.value, &symbol, sizeof(Symbol));
     }
@@ -517,11 +536,35 @@ void interpret(const Var *vars, size_t length) {
         while (node != NULL) {
             Symbol symbol = *(Symbol*)node->data;
 
-            print_symbol(&symbols, symbol, false);
+            print_symbol(symbols, symbol, false, false);
 
             node = node->next;
         }
     }
+
+    map_free(symbols);
+}
+
+void to_json(const Var *vars, size_t length) {
+    symbols = map_new();
+
+    printf("{");
+
+    for (size_t i = 0; i < length; i++) {
+        if (i > 0) printf(", ");
+
+        Var var = vars[i];
+
+        Symbol symbol = interpret_var(var);
+
+        printf("\"%s\": ", symbol.name.value);
+
+        print_symbol(symbols, symbol, true, true);
+
+        map_set(symbols, symbol.name.value, &symbol, sizeof(Symbol));
+    }
+
+    printf("}");
 
     map_free(symbols);
 }

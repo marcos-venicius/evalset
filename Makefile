@@ -1,4 +1,4 @@
-CXX = clang
+CXX = gcc
 CFLAGS = -Wall -Wextra -pedantic -ggdb
 EXE_NAME = evalset
 

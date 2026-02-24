@@ -10,6 +10,7 @@
 #include "utils.h"
 
 #define arg() shift(&argc, &argv)
+#define s_strcmp(a, b) cmp_sized_strings(a, strlen(a), b, strlen(b))
 
 char *shift(int *argc, char ***argv) {
     if ((*argc)-- == 0) return NULL;
@@ -18,7 +19,7 @@ char *shift(int *argc, char ***argv) {
 }
 
 void usage(FILE *stream, const char *program_name) {
-    fprintf(stream, "usage: %s <filename> [--format]\n", program_name);
+    fprintf(stream, "usage: %s <filename> [--format|--to-json]\n", program_name);
 }
 
 int main(int argc, char **argv) {
@@ -44,21 +45,23 @@ int main(int argc, char **argv) {
         print_tokens(head);
     }
 
-    Parser parser = parse_tokens(head);
+    Ast ast = parse_tokens(head);
 
-    if (flag != NULL && cmp_sized_strings(flag, strlen(flag), "--format", 8)) {
-        for (size_t i = 0; i < parser.length; i++) {
-            Var var = parser.vars[i];
+    if (flag != NULL && s_strcmp(flag, "--format")) {
+        for (size_t i = 0; i < ast.length; i++) {
+            Var var = ast.vars[i];
 
             print_var(var, false, 0);
 
-            if (i < parser.length - 1) printf("\n");
+            if (i < ast.length - 1) printf("\n");
         }
+    } else if (flag != NULL && s_strcmp(flag, "--to-json")) {
+        to_json(ast.vars, ast.length);
     } else {
-        interpret(parser.vars, parser.length);
+        interpret(ast.vars, ast.length);
     }
 
-    parser_free(parser);
+    ast_free(ast);
     lexer_free(&lexer);
 
     return 0;
